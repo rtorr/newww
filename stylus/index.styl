@@ -1,0 +1,616 @@
+@import 'nib'
+
+red = #cc3d33
+
+body, input {
+  font: 14px Lucida Grande, sans-serif;
+  color: #666;
+}
+
+small.heart {
+  position:absolute;
+  font-size:10px;
+  right:0;
+  padding:1em;
+}
+
+pre.sh {
+  background:#fff;
+  padding:0.4em 0;
+}
+
+pre.sh::before {
+  content: "$ "
+}
+
+body {
+  background: #C3BDB3;
+  border-top: solid 6px red;
+  text-align: center;
+}
+
+input {
+  font-family: Georgia, serif;
+  border: solid 1px #ddd;
+  padding: 0.5em;
+  &:hover { border-color: #bbb; }
+}
+
+a:link, a:visited, a:active {
+  text-decoration: none;
+  color: red;
+  &:hover { text-decoration: underline; }
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #000;
+}
+
+form {
+  a.email-label, label {
+    display: inline-block;
+    width: 30%;
+    font-weight:bold;
+    vertical-align: top;
+    line-height: 30px;
+  }
+  input, select {
+    display: inline-block;
+    width: 65%;
+  }
+  a.email-field {
+    display: inline-block;
+    width: 65%;
+  }
+  a.email-field input {
+    background:#eee;
+    font-style:italic;
+    width: 100%;
+  }
+  a.email-field:hover input {
+    background:#fff;
+    cursor:hand;
+    cursor:pointer;
+  }
+  a.email-field span {
+    position:absolute;
+    right:0;
+  }
+  fieldset {
+    position:relative;
+    border-width:0;
+    margin-bottom:5px;
+  }
+  fieldset.buttons {
+    border-top-width: 1px;
+    padding-top: 1em;
+    .btn {
+      margin-right: 0.5em;
+    }
+  }
+  .form-help {
+    font-style: italic;
+    font-size:0.9em;
+    color:#777;
+  }
+}
+
+// utilities
+
+.btn {
+  display: inline-block;
+  padding: 0.5em 1.5em;
+  background: red;
+  border-radius: 5px;
+  border:0;
+  color: #fff;
+  font-weight: bold;
+  text-decoration: none;
+  &:hover, &:active {
+    background: #89221B;
+  }
+}
+
+.error {
+  color: red;
+  font-weight: bold;
+}
+
+// layout
+
+#wrap {
+  background-color: #f4f4f2;
+  padding: 49px 16px 72px;
+}
+
+#content {
+  width: 953px;
+  margin: 0 auto;
+  text-align: left;
+
+  nav {
+    float: left;
+    margin: 0 5px 0 0;
+    width: 140px;
+    font-size: 11px;
+    text-transform: uppercase;
+    &, a {
+      color: #999;
+    }
+    ul {
+      margin: 0;
+      padding: 0;
+      li {
+        border-top: solid 1px #ccc;
+        a {
+          display: block;
+          padding: 0 0 0 35px;
+          line-height: 23px;
+          background: url('/static/img/icons-interior.png') no-repeat -156px 3px;
+        }
+      }
+      li:first-child { border-top: none; }
+
+      for link, i in home download about npm docs blog community logos jobs hiring-group hiring-company hiring-more {
+        li.{link} a {
+          background-position: -156px -24*i+3px;
+        }
+        li.{link} a:hover {
+          background-position: -331px -24*i+3px;
+          color: #000;
+        }
+        li.{link}.current a {
+          background-position: 2px -24*i+3px;
+          color: red;
+          font-weight: bold;
+        }
+      }
+
+      &.hiring {
+        margin-top: 5em;
+
+        .hiring-company {
+          padding: 0;
+          text-align: center;
+
+          a { padding: 0; }
+        }
+      }
+    }
+  }
+  .profile {
+
+    padding-left: 0;
+    .profsub {
+      margin:1em 0 0 0;
+      font-size:11px;
+    }
+    .profsub a:first {
+      border-right: 1px solid #999
+    }
+  }
+
+  aside.login {
+    background: linear-gradient(top, hsla(0, 0%, 50%, 0.1), transparent);
+    float: right;
+    padding: 1em;
+    width: 220px;
+  }
+
+  #page {
+    line-height: 150%;
+    margin-left 120px + 80px;
+    margin-right: 220px + 40px;
+
+    header {
+      form input {
+        font-size: 18px;
+        width: 50%;
+        float: right;
+      }
+    }
+  }
+  #npm-logo {
+    position: relative;
+    top: -10px;
+
+    img {
+      border: 0;
+      width: 200px;
+      height: 78px;
+      image-rendering: -o-crisp-edges;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+  }
+}
+
+#footer {
+  width: 953px;
+  font-size:12px;
+  overflow:hidden;
+  padding:12px 0 40px;
+  margin:12px auto 0;
+  color:#666;
+
+  a.footlogo {
+    float:left;
+    background:url(/favicon.ico) 34px -17px no-repeat;
+    text-indent:-999em;
+    width:160px;
+    height:60px;
+  }
+
+  ul {
+    float:left;
+    margin:0;
+    padding:0;
+  }
+
+  li {
+    float:left;
+    display:block;
+    height:26px;
+    line-height:26px;
+    margin:0;
+    padding:0;
+
+    a {
+      line-height:26px;
+      padding:0 1em;
+      display:block;
+      height:100%;
+      width:100%;
+    }
+  }
+
+  h2 {
+    color:#666;
+    font-weight:normal;
+    padding:0;
+    margin:0;
+    font-size:inherit;
+  }
+
+  .poweredby {
+    clear:left;
+    margin-left:184px;
+
+    h2 {
+      float:left;
+      line-height:26px;
+    }
+
+    li {
+      height:32px;
+      padding:0 1em;
+      margin-top:-6px;
+
+      a {
+        padding:0;
+      }
+    }
+  }
+}
+
+.user {
+  padding-left: 32px;
+  position: relative;
+
+  .username {
+    font-weight: bold;
+  }
+
+  .avatar-medium {
+    margin-right: 1em;
+    float: left;
+    width: 50px;
+    height: 50px;
+  }
+
+  .avatar {
+    position: absolute;
+    top: -4px;
+    left: 0;
+    width: 25px;
+    height: 25px;
+  }
+}
+
+#index {
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    tr {
+      vertical-align: top;
+    }
+    h2 {
+      white-space: nowrap;
+    }
+  }
+}
+
+.login-for-graphs {
+  font-size: 0.85em;
+  font-style: italic;
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+  margin: 0.5em 0 1em;
+}
+
+table.downloads {
+  width:auto;
+  border-collapse: collapse;
+  td {
+    white-space: nowrap;
+    padding-right:1em;
+  }
+  td:first-child {
+    text-align:right;
+  }
+}
+
+
+.search-results, .search-results li, .search-result ul {
+  list-style:none
+  margin:0;
+  padding: 0;
+}
+
+.search-result {
+  position:relative;
+}
+
+.search-result.package h2 {
+  width: 75%;
+  overflow: ellipsis;
+  padding-bottom: 2px;
+}
+
+.search-result .details {
+  position: relative;
+  margin-top: 5px;
+  font-size: .85em
+  clearfix()
+}
+
+.search-result .version {
+  // position:absolute;
+  // bottom:-14px;
+  // right:0;
+  width: 30%;
+  text-align: right;
+  float right
+}
+
+.search-result ul li {
+  display:inline;
+
+}
+
+.package.search-result ul.keywords {
+  display:block;
+  width: 70%;
+}
+
+.package.search-result ul.hud {
+  display: block;
+  width: 25%;
+  absolute top 2em right 0
+  text-align: right
+  font-size 0.9em
+
+  .dlScore {
+    margin-right 15px
+
+    &::after {
+      background-image: url("/static/img/icon_download.png");
+      background-size: 10px 10px;
+      content: "";
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      // margin-left: -17px;
+      bottom: 6px;
+    }
+
+  }
+
+  .dlScore-increasing::after {
+    background-image: url("/static/img/icon_up.png");
+    // margin-left: 11px;
+  }
+
+  .dlScore-decreasing::after {
+    background-image: url("/static/img/icon_down.png");
+    // margin-left: 11px;
+  }
+
+  .dlScore-steady::after {
+    background-image: url("/static/img/icon_right.png");
+    // margin-left: 11px;
+  }
+
+  .stars::before {
+    content: "\00a0"
+  }
+
+  .stars::after {
+    content: "★"
+    color: #F7C138
+    margin-left: 2px
+  }
+}
+
+html body ul.search-results .package.search-result {
+  padding: .5em 0;
+}
+
+.package, #package, #profile {
+  width:490px;
+  header {
+    border-bottom: solid 1px #000;
+    position: relative;
+
+    h1 {
+      font: 28px Georgia, serif;
+      margin: 0;
+    }
+  }
+  .unpublished h1{
+    color: #999;
+  }
+
+  .row {
+    padding:0.75em 0;
+    border-top: solid 1px #ccc;
+  }
+  p.description {
+    font: 18px Georgia, serif;
+  }
+  table.metadata {
+    margin: 1em 0;
+    width: 100%;
+    tr {
+      border-top: solid 1px #ccc;
+    }
+    th, td {
+      padding: 0.5em 0;
+      vertical-align: baseline;
+    }
+    th {
+      color: #000;
+      font-weight: normal;
+      text-align: left;
+      width: 130px;
+    }
+    b {
+      color: #000;
+      font-weight: bold;
+      font-size: 14px;
+    }
+  }
+  .details {
+    ul.toc {
+      padding: 0;
+      margin-bottom: 0;
+      font-size: 16px;
+      li {
+        display: inline-block;
+        padding: 0.5em 32px 0.5em 16px;
+        &:first-child {
+          background-color: #fff;
+        }
+      }
+    }
+
+    section {
+      padding: 16px;
+      background-color: #fff;
+      margin-right: -260px;
+
+      &#readme {
+        h1 { font-size: 24px; }
+        img {
+          max-width:100%;
+        }
+        pre {
+          white-space:pre-wrap;
+          max-width:100%;
+          overflow:auto;
+          font-family: Monaco, monospace;
+          background-color: #f9f9f8;
+          padding: 16px;
+        }
+        table {
+          th, td {
+            padding: 0.5em;
+            vertical-align: baseline;
+            border: solid 1px #ccc;
+          }
+          & tr:nth-child(2n) td {
+            background: #f8f8f8;
+          }
+        }
+      }
+    }
+  }
+
+  .star {
+    display: inline-block;
+    position: absolute;
+    right: 0;
+    bottom: 3px;
+    font-size: 2em;
+    color: #000;
+    &:before {
+      content: '☆ '
+    }
+    &:hover {
+      text-decoration: none;
+    }
+  }
+  .star-starred {
+    color: #F7C138;
+    &:before {
+      content: '★ '
+    }
+  }
+
+  .user {
+    padding: 1px;
+
+    .avatar {
+      position:relative;
+      top:0;
+      display:inline-block;
+      vertical-align:middle;
+      width: 32px;
+      height: 32px;
+    }
+  }
+}
+
+#profile {
+  position: relative;
+
+  .avatar-large {
+    display:block;
+    position:absolute;
+    width:248px;
+    height:248px;
+    top:0;
+    right:-260px;
+  }
+  table.metadata tr:first-child {
+    border-top: none;
+  }
+}
+
+.hiring {
+  .hiring-logo {
+    display: inline-block;
+    vertical-align: middle;
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 1em;
+    width: 120px;
+
+    a {
+      text-indent: -9999px;
+      display: block;
+      height: 50px;
+      width: 100px;
+    }
+  }
+
+  dd {
+    display: inline-block;
+    vertical-align: middle;
+    width: 70%;
+    margin: 0;
+    margin-bottom: 1em;
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "company",
+  "version": "0.0.1",
+  "description": "Company Facet - everything directly related to the company",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "npm, Inc. <support@npmjs.com>",
+  "license": "ISC"
+}

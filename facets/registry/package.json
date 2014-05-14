@@ -1,0 +1,11 @@
+{
+  "name": "registry",
+  "version": "0.0.1",
+  "description": "Registry Facet - package pages, search, etc",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "npm, Inc. <support@npmjs.com>",
+  "license": "ISC"
+}

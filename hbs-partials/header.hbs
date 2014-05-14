@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title> {{#if title }} {{title}} {{else}} npm {{/if}} </title>
+</head>
+  <link rel="canonical" href="<%= canonicalHref %>">
+  <link type="text/css" rel="stylesheet" media="all"
+    href="/static/css/normalize.css">
+  <link type="text/css" rel="stylesheet" media="all"
+    href="/static/css/index.css">
+  <link type="text/css" rel="stylesheet" media="all"
+    href="/static/css/sh.css">
+  <link type="text/css" rel="stylesheet" media="all"
+        href="/static/css/charts.css">
+  <link rel="search" type="application/opensearchdescription+xml"
+    href="/static/opensearch.xml" title="Search Packages" />
+<body>
+  <div id="wrap"><div id="content">
+    {{> nav this}}
+    {{!-- {{> login-aside this}} --}}
+
+    <div id="page">
+      <header>
+        <form action="/search" method="get">
+          {{#if search.q }}
+          <input name=q type="search" placeholder="Search Packages" value="<%= sanitize(search.q) %>" tabindex="1">
+          {{else}}
+          <input name=q type="search" placeholder="Search Packages" tabindex="1">
+          {{/if}}
+        </form>
+        <h1>
+          <a id="npm-logo" href="/">
+            <img src="/static/img/npm.png" alt="npm">
+          </a>
+        </h1>
+      </header>
+
+

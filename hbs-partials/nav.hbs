@@ -1,0 +1,35 @@
+<nav>
+  <ul>
+    <li class="npm current">
+      <a href="/">Home</a>
+    </li>
+    <li class="docs">
+      <a href="http://npmjs.org/doc/">API</a>
+    </li>
+    <li class="blog">
+      <a href="http://blog.npmjs.org/">Blog</a>
+    </li>
+    <li class="logos">
+      <a href="http://nodejs.org/">Node.js</a>
+    </li>
+    <li class="jobs">
+      <a href="http://www.npmjs.com/jobs/">Jobs</a>
+    </li>
+  </ul>
+
+  <ul class="hiring">
+    <li class="hiring-group">
+      <a href="/whoshiring">Who's Hiring</a>
+    </li>
+    {{#if hiring.name}}
+      <li data-id="<%= hiring.id %>" class="hiring-company">
+        <a href="<%= hiring.url %>">
+          <span>{{hiring.name}}</span>
+        </a>
+      </li>
+      <li class="hiring-more">
+        <a href="/whoshiring">+ {{hiring.numCompanies - 1}} More...</a>
+      </li>
+    {{/if}}
+  </ul>
+</nav>

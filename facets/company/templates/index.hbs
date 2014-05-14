@@ -1,0 +1,101 @@
+{{> header}}
+
+<div id="index">
+  <h1>Node Packaged Modules</h1>
+
+  {{#if totalPackages }}
+  <p>Total Packages: <%= totalPackages %></p>
+  {{/if}}
+
+  {{!-- {{> download-counts { day: dlDay, week: dlWeek, month: dlMonth } }} --}}
+
+  <p><a href="https://github.com/npm/npm-www">Patches welcome!</a></p>
+
+  <p>Any package can be installed by using <code>
+    <a href="/doc/install.html">npm install</a></code>.</p>
+
+  <p>Add your programs to this index by using <code>
+    <a href="/doc/publish.html">npm publish</a></code>.</p>
+
+  <!-- tables fer layout omigosh! whatever, it works. -->
+  <table>
+  <tr>
+
+    <td>
+      <h2>Recently Updated</h2>
+      <ul>
+        {{#each updated}}
+          <li>{{sinceUpdated value}}m <a href="{{url}}">{{name}}</a></li>
+        {{/each}}
+        <li><a href="/browse/updated">More...</a></li>
+      </ul>
+    </td>
+
+    <td>
+      <h2>Most Depended Upon</h2>
+      <ul>
+        {{#each depended}}
+          <li>{{value}} <a href="/package/{{name}}">{{name}}</a></li>
+        {{/each}}
+        <li><a href="/browse/depended">More...</a></li>
+      </ul>
+    </td>
+
+  </tr>
+  <tr>
+
+    <td>
+      <h2>Most Starred</h2>
+      <ul>
+        {{#each starred}}
+          <li>{{value}} <a href="/package/{{name}}">{{name}}</a></li>
+        {{/each}}
+        <li><a href="/browse/star">More...</a></li>
+      </ul>
+    </td>
+
+    <td>
+      <h2>Most Prolific Recently</h2>
+      <ul>
+        {{#each authors}}
+          <li>{{value}} <a href="/~{{name}}">{{name}}</a></li>
+        {{/each}}
+        <li><a href="/recent-authors">More...</a></li>
+      </ul>
+    </td>
+
+  </tr>
+  <tr>
+
+    <td>
+      <h2>npm Stuff</h2>
+      <ul>
+        <li><a href="/doc/faq.html">FAQ</a></li>
+        <li><a href="/doc/README.html">Readme</a></li>
+        <li><a href="/doc/disputes.html">Handling Disputes</a></li>
+        <li><a href="https://github.com/npm/npm/issues">npm Bugs</a></li>
+        <li><a href="https://github.com/npm/npm-www/issues">Website Bugs</a></li>
+        <li><a href="https://groups.google.com/group/npm-">Mailing List</a></li>
+        <li><a href="/about">More about this site</a></li>
+      </ul>
+    </td>
+
+    <td>
+      <h2>Profile Stuff</h2>
+
+      <ul>
+        <li><a href="/signup">Create a profile</a></li>
+        <li><a href="/~">View your profile</a></li>
+        <li><a href="/~ry">View someone else's profile</a></li>
+        <li><a href="/profile-edit">Edit your profile</a></li>
+        <li><a href="/password">Change your password</a></li>
+        <li><a href="/forgot">Reset a forgotten password</a></li>
+        <li><a href="/logout">Log out</a></li>
+      </ul>
+    </td>
+
+  </tr>
+  </table>
+</div>
+
+{{> footer}}
