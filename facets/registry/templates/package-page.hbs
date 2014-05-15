@@ -1,4 +1,4 @@
-{{> header.ejs}}
+{{> header}}
 
   {{#with package}}
   <div id="package">
@@ -17,122 +17,96 @@
       <p class="description">{{description}}</p>
     {{/if}}
 
-    <pre class="sh"><code>npm install <%= package.name %></code></pre>
+    <pre class="sh"><code>npm install {{name}}</code></pre>
 
-    <% if(dlDetail == 'point') { %>
+{{!--     {{#if (dlDetail == 'point')}}
       <span class="login-for-graphs">Want to see pretty graphs? <a href="/login?done=/package/<%= package.name %>">Log in now!</a></span>
-      <%- include('download-counts.ejs', {
-                  day: dlDay,
-                  week: dlWeek,
-                  month: dlMonth
-                  }) %>
-    <% } else { %>
-      <%- include('download-graphs.ejs', { month: dlMonth }) %>
-    <% } %>
+      {{> download-counts {day: dlDay, week: dlWeek, month: dlMonth } }}
+    {{else}}
+      {{> download-graphs { month: dlMonth }}}
+    {{/if}}
+ --}}
 
     <table class="metadata">
-      <% if (package._npmUser) { %>
+      {{#if _npmUser}}
       <tr>
         <th>Last Published By</th>
         <td>
           <div class="user">
-          <a class="username" href="/~<%= package._npmUser.name %>"><%
-            if (package._npmUser.avatar) {
-            %><img src="<%= package._npmUser.avatar %>" class="avatar">
-            <% } %><%= package._npmUser.name %></a>
+            <a class="username" href="/~<%= package._npmUser.name %>">
+              {{#if _npmUser.avatar}}
+              <img src="{{_npmUser.avatar}}" class="avatar">
+              {{/if}}
+              {{_npmUser.name}}
+            </a>
           </div>
         </td>
       </tr>
-      <% } %>
-      <% if (package.showMaintainers) { %>
+      {{/if}}
+      {{#if showMaintainers}}
       <tr>
         <th>Maintainers</th>
         <td>
-        <%
-        package.maintainers.forEach(function (m) {
-          %>
+        {{#each maintainers}}
           <div class="user">
-          <a class="username" href="/~<%= m.name %>"><%
-            if (m.avatar) {
-            %><img src="<%= m.avatar %>" class="avatar">
-            <% } %><%= m.name %></a>
+          <a class="username" href="/~{{name}}">
+            {{#if avatar}}
+            <img src="{{avatar}}" class="avatar">
+            {{/if}}{{name}}</a>
           </div>
-          <%
-        })
-        %>
+        {{/each}}
         </td>
       </tr>
-      <% } %>
+      {{/if}}
       <tr>
         <th>Version</th>
         <td>
           <b>
-          <%= package.version %>
+          {{version}}
           </b>
-          <% if (package.fromNow) { %>
+          {{#if fromNow}}
           last updated
-          <%= package.fromNow %>
-          <% } %>
+          {{fromNow}}
+          {{/if}}
         </td>
       </tr>
-      <% if (package.license) { %>
+      {{#if license}}
       <tr>
         <th>License</th>
         <td>
-            <a href="<%= package.license.url %>"><%= package.license.name %></a>
+            <a href="{{license.url}}">{{license.name}}</a>
         </td>
       </tr>
-      <% } %>
-      <%
-      if (typeof package.keywords === 'string') {
-        package.keywords = package.keywords.split(/\s*,?\s*/)
-      }
-      if (Array.isArray(package.keywords)) {
-      %>
+      {{/if}}
+      {{#if keywords}}
       <tr>
         <th>Keywords</th>
-        <td><%-
-          package.keywords.map(function (kw) {
-            kw = kw.replace(/</g, '&lt;').replace(/"/g, '&quot;')
-            return '<a href="/browse/keyword/' + kw + '">' + kw + '</a>'
-          }).join(', ')
-          %></td>
+        <td>{{{packageKeywords keywords}}}</td>
       </tr>
-      <% } %>
-      <% if (package.repository && package.repository !== 'undefined') {
-      var gh = package.repository.url &&
-          package.repository.url.match(
-          /^(?:https?:\/\/|git(?::\/\/|@))(gist.github.com|github.com)[:\/](.*?)(?:.git)?$/)
-      if (gh) {
-        gh = 'https://' + gh[1] + '/' + gh[2]
-      }
-      %>
+      {{/if}}
+      {{#if repository}}
       <tr>
         <th>Repository</th>
-        <td>
-          <% if (gh) { %><a href="<%= gh %>"><% } %>
-          <%= package.repository.url %><% if (gh) { %></a><% } %>
-          (<%= package.repository.type %>)
-        </td>
+        <td>{{{packageRepository repository}}}</td>
       </tr>
-      <% } %>
-      <% if (typeof package.homepage === 'string') { %>
+      {{/if}}
+{{!--       <% if (typeof package.homepage === 'string') { %>
       <tr>
         <th>Homepage</th>
         <td>
           <a href="<%= encodeURI(package.homepage) %>"><%= package.homepage.replace(/</g, '&lt;') %></a>
         </td>
       </tr>
-      <% } %>
-      <% if (package.bugs && package.bugs.url) { %>
+      <% } %> --}}
+      {{#if bugs.url}}
       <tr>
         <th>Bugs</th>
         <td>
-          <a href="<%= package.bugs.url %>"><%= package.bugs.url %></a>
+          <a href="{{bugs.url}}">{{bugs.url}}</a>
         </td>
       </tr>
-      <% } %>
-      <tr>
+      {{/if}}
+      {{!-- <tr>
         <%
           var deps = Object.keys(package.dependencies || {})
           var l = deps.length
@@ -156,8 +130,8 @@
           }
           %>
         </td>
-      </tr>
-      <%
+      </tr> --}}
+      {{!-- <%
       var dependents = package.dependents
       var l = dependents.length
       if (dependents && l) { %>
@@ -184,9 +158,9 @@
         %>
         </td>
       </tr>
-      <% } %>
+      <% } %> --}}
 
-      <% if (package.users) {
+      {{!-- <% if (package.users) {
         var starredBy = package.starredBy
         var l = starredBy.length
       %>
@@ -211,21 +185,21 @@
           %>
         </td>
       </tr>
-      <% } %>
+      <% } %> --}}
     </table>
 
     <div class="details">
       <ul class="toc">
-        <% if (package.readme) { %>
+        {{#if readme}}
         <li><a href="#readme">Read Me</a></li>
-        <% } %>
+        {{/if}}
       </ul>
 
-      <% if (package.readme) { %>
+      {{#if readme}}
       <section id="readme">
-      <%- package.readme %>
+      {{{readme}}}
       </section>
-      <% } %>
+      {{/if}}
     </div>
   </div>
   {{/with}}
