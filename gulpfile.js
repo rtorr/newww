@@ -10,7 +10,7 @@ gulp.task('styles', function () {
 })
 
 gulp.task('develop', function () {
-  nodemon({ script: 'index.js', ext: 'hbs styl' })
+  nodemon({ script: 'index.js', ext: 'hbs styl js', ignore: 'node_modules/' })
     .on('change', ['styles'])
     .on('restart', function () {
       console.log('restarted!')

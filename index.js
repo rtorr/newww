@@ -12,7 +12,12 @@ var options = {
   }
 };
 
-var server = new Hapi.Server('localhost', 8080, options)
+var dbOptions = {
+  "couchAuth": "admin:admin",
+  "registryCouch": "http://localhost:15984/"
+}
+
+var server = new Hapi.Server('localhost', 15443, options)
 
 server.route({
   path: '/static/{path*}',
@@ -26,19 +31,9 @@ server.route({
   }
 });
 
-server.route({
-  path: '/stylus/{path*}',
-  method: 'GET',
-  handler: {
-    directory: {
-      path: './stylus',
-      listing: false,
-      index: false
-    }
-  }
-})
 
-server.pack.require(['./facets/company', './facets/registry'], function(err) {
+
+server.pack.require({'./facets/company': null, './facets/registry': null, './servers/hapi-couchdb': dbOptions}, function(err) {
     if (err) throw err;
     server.start(function() {
         console.log('Hapi server started @ ' + server.info.uri);
