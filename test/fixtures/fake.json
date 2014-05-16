@@ -1,0 +1,84 @@
+{
+  "_id": "fake",
+  "_rev": "1-1",
+  "name": "fake",
+  "dist-tags": {
+    "latest": "0.0.1"
+  },
+  "versions": {
+    "0.0.1": {
+      "name": "fake",
+      "version": "0.0.1",
+      "description": "Not a real package",
+      "author": {
+        "name": "Boom Diggity",
+        "email": "boom@npmjs.com"
+      },
+      "main": "fake.js",
+      "scripts": {
+        "test": "node test.js"
+      },
+      "repository": {
+        "type": "git",
+        "url": "http://github.com/boom/fake"
+      },
+      "license": "mit",
+      "bugs": {
+        "url": "https://github.com/boom/fake/issues"
+      },
+      "homepage": "https://github.com/boom/fake",
+      "_id": "fake@0.0.1",
+      "_shasum": "5d8257bd9ebe435e698b2fa431afde4fe7b10b03",
+      "_from": ".",
+      "_npmVersion": "1.4.7",
+      "_npmUser": {
+        "name": "boom",
+        "email": "boom@npmjs.com"
+      },
+      "maintainers": [
+        {
+          "name": "boom",
+          "email": "npmjs.com"
+        }
+      ],
+      "dist": {
+        "shasum": "5d8257bd9ebe435e698b2fa431afde4fe7b10b03",
+        "tarball": "http://registry.npmjs.org/fake/-/fake-0.0.1.tgz"
+      }
+    }
+  },
+  "maintainers": [
+    {
+      "name": "boom",
+      "email": "boom@npmjs.com"
+    }
+  ],
+  "author": {
+    "name": "Boom Diggity",
+    "email": "boom@npmjs.com"
+  },
+  "description": "Not a real package",
+  "time": {
+    "modified": "2011-03-21T22:21:11.183Z",
+    "created": "2011-03-21T22:21:11.183Z",
+    "0.0.1": "2011-03-21T22:21:11.183Z"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/boom/fake"
+  },
+  "users": {
+    "rockbot": true
+  },
+  "keywords": [
+    "fake",
+    "omg so fake"
+  ],
+  "readme": "# fake\n\nNot actually a package. In fact, it's not even real. [Here's a link](http://somelink.com/somwhere).\n\n[And here's a relative link](somewhere.md#bugs)\n",
+  "readmeFilename": "README.md",
+  "homepage": "https://github.com/boom/fake",
+  "bugs": {
+    "url": "https://github.com/boom/fake/issues"
+  },
+  "license": "MIT"
+}

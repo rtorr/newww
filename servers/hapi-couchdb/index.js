@@ -19,7 +19,7 @@ exports.register = function Couch (server, options, next) {
 
   anonCouch = new CouchLogin(options.registryCouch, NaN);
 
-  server.method('getPackage', function (package, next) {
+  server.method('getPackageFromCouch', function (package, next) {
     anonCouch.get('/registry/' + package, function (er, cr, data) {
       next(er, data);
     })
