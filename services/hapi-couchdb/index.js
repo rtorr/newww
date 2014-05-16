@@ -1,6 +1,6 @@
 var CouchLogin = require('couch-login');
 
-exports.register = function Couch (server, options, next) {
+exports.register = function Couch (service, options, next) {
   var adminCouch, anonCouch;
 
   if (options.couchAuth) {
@@ -19,7 +19,7 @@ exports.register = function Couch (server, options, next) {
 
   anonCouch = new CouchLogin(options.registryCouch, NaN);
 
-  server.method('getPackageFromCouch', function (package, next) {
+  service.method('getPackageFromCouch', function (package, next) {
     anonCouch.get('/registry/' + package, function (er, cr, data) {
       next(er, data);
     })
