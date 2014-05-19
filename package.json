@@ -1,6 +1,6 @@
 {
   "name": "www-hapi",
-  "version": "0.0.0",
+  "version": "0.0.2",
   "description": "A total rewrite of npm-www using hapijs",
   "main": "index.js",
   "scripts": {
@@ -12,7 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "handlebars": "^2.0.0-alpha.2",
-    "hapi": "^4.1.0",
+    "hapi": "^5.0.0",
     "joi": "^3.1.0",
     "nib": "^1.0.2",
     "stylus": "^0.45.0"
