@@ -1,4 +1,5 @@
-var CouchLogin = require('couch-login');
+var CouchLogin = require('couch-login'),
+    SECOND = 1000;
 
 exports.register = function Couch (service, options, next) {
   var adminCouch, anonCouch;
@@ -23,6 +24,11 @@ exports.register = function Couch (service, options, next) {
     anonCouch.get('/registry/' + package, function (er, cr, data) {
       next(er, data);
     })
+  }, {
+    cache: {
+      expiresIn: 60 * SECOND,
+      segment: '##package:'
+    }
   })
 
   next();

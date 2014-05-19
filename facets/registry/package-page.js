@@ -1,4 +1,4 @@
-var Hapi = require('hapi')
+var Hapi = require('hapi'),
     marked = require('marked'),
     sanitizer = require('sanitizer'),
     gravatar = require('gravatar').url,
@@ -12,6 +12,10 @@ module.exports = function (request, reply) {
   var getPackageFromCouch = request.server.methods.getPackageFromCouch;
 
   var nameInfo = parseName(request.params.package)
+
+  if (nameInfo.name !== encodeURIComponent(nameInfo.name)) {
+    return reply(new Error('invalid package name'))
+  }
 
   getPackageFromCouch(couchLookupName(nameInfo), function (er, data) {
     if (er || data.error) { // user probably isn't logged in
