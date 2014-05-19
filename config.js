@@ -19,6 +19,13 @@ module.exports = {
       host: '127.0.0.1',
       port: '16379',
       password: 'i-am-using-redis-in-development-mode-for-npm-www'
+    },
+    security: {
+      hsts: {
+        maxAge: 1000 * 60 * 60 * 24 * 30,
+        includeSubdomains: true
+      },
+      xframe: true
     }
   },
   couch: {
