@@ -15,7 +15,12 @@ server.route({
   }
 });
 
-server.pack.require({'./facets/company': null, './facets/registry': null, './services/hapi-couchdb': config.couch}, function(err) {
+server.pack.require({
+  './facets/company': null,
+  './facets/registry': null,
+  './facets/user': config.user,
+  './services/hapi-couchdb': config.couch
+}, function(err) {
     if (err) throw err;
     server.start(function() {
         console.log('Hapi server started @ ' + server.info.uri);

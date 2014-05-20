@@ -23,13 +23,30 @@ exports.register = function Couch (service, options, next) {
   service.method('getPackageFromCouch', function (package, next) {
     anonCouch.get('/registry/' + package, function (er, cr, data) {
       next(er, data);
-    })
+    });
   }, {
     cache: {
       expiresIn: 60 * SECOND,
       segment: '##package:'
     }
+  });
+
+  service.method('getUserFromCouch', function (name, next) {
+    anonCouch.get('/_users/org.couchdb.user:' + name, function (er, cr, data) {
+      if (er || cr & cr.statusCode !== 200 || !data) {
+        return next(er)
+      }
+
+      return next(null, data)
+    })
+  // }, {
+  //   cache: {
+  //     expiresIn: 60 * SECOND,
+  //     segment: '##session:'
+  //   }
   })
 
   next();
 }
+
+
