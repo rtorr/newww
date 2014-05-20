@@ -1,5 +1,5 @@
 {
-  "name": "registry",
+  "name": "npm-registry",
   "version": "0.0.1",
   "description": "Registry Facet - package pages, search, etc",
   "main": "index.js",

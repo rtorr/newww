@@ -1,5 +1,5 @@
 {
-  "name": "company",
+  "name": "npm-company",
   "version": "0.0.1",
   "description": "Company Facet - everything directly related to the company",
   "main": "index.js",

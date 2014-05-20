@@ -1,5 +1,5 @@
 {
-  "name": "hapi-couchdb",
+  "name": "npm-couchdb",
   "version": "0.0.1",
   "description": "Adds couchDB functionality to Hapi",
   "main": "index.js",

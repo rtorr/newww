@@ -8,7 +8,7 @@
     "prestart": "node_modules/.bin/stylus stylus/index.styl --use nib --out static/css/",
     "start": "gulp develop"
   },
-  "author": "",
+  "author": "npm, Inc. <support@npmjs.com>",
   "license": "ISC",
   "dependencies": {
     "catbox": "^2.2.1",
