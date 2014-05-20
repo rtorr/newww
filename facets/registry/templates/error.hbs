@@ -1,0 +1,29 @@
+{{> header}}
+<h1>{{output.payload.message}}</h1>
+
+<p>{{message}}</p>
+{{!--  <p>An error occurred.  If you feel this is a bug (which is likely),
+  you are encouraged to
+  <a href="https://github.com/npm/npm-www/issues/new?{{createIssue error.output.statusCode }}">submit an issue</a> so that it can be addressed.</p>
+
+<p>If you have ideas about how this could have been handled better,
+  please share those as well.</p>
+
+<h2>Additional Debug Information</h2>
+
+<pre>{{locals.stack}}
+
+headers = {{stringify locals.headers null 2}}
+
+error = {{stringify error function(k,v) {
+              if (k.match(/^domain/) && typeof v === 'object')
+                return '[object ' + v.constructor.name + ']'
+              return v
+            },2)}}
+
+statusCode = {{error.output.statusCode}}
+
+stamp = {{stamp}}
+</pre> --}}
+
+{{> footer}}

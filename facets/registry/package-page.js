@@ -14,14 +14,18 @@ module.exports = function (request, reply) {
   var nameInfo = parseName(request.params.package)
 
   if (nameInfo.name !== encodeURIComponent(nameInfo.name)) {
-    return reply(new Error('invalid package name'))
+    var error = Hapi.error.badRequest('Invalid Package Name');
+    error.message = "The package you have requested is an invalid package name.\n\nTry again?"
+
+    return reply.view('error', error)
   }
 
   getPackageFromCouch(couchLookupName(nameInfo), function (er, data) {
-    if (er || data.error) { // user probably isn't logged in
-      var error = Hapi.error.notFound(er || data.message);
+    if (er || data.error) {
+      var error = Hapi.error.notFound('Package Not Found');
+      error.message = "This package does not exist in the registry. Would you like to claim it for yourself?"
 
-      reply(error)
+      return reply.view('error', error)
     }
 
     preparePackageForViewing(data, function (er, data) {
