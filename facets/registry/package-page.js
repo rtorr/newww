@@ -10,8 +10,10 @@ var Hapi = require('hapi'),
 
 module.exports = function (request, reply) {
   var getPackageFromCouch = request.server.methods.getPackageFromCouch;
+  var getBrowseData = request.server.methods.getBrowseData;
 
   var nameInfo = parseName(request.params.package)
+  var version = nameInfo.version || 'latest'
 
   if (nameInfo.name !== encodeURIComponent(nameInfo.name)) {
     var error = Hapi.error.badRequest('Invalid Package Name');
@@ -20,18 +22,30 @@ module.exports = function (request, reply) {
     return reply.view('error', error)
   }
 
-  getPackageFromCouch(couchLookupName(nameInfo), function (er, data) {
-    if (er || data.error) {
+  getPackageFromCouch(couchLookupName(nameInfo), function (er, pkg) {
+    if (er || pkg.error) {
       var error = Hapi.error.notFound('Package Not Found');
       error.message = "This package does not exist in the registry. Would you like to claim it for yourself?"
 
       return reply.view('error', error)
     }
 
-    preparePackageForViewing(data, function (er, data) {
-      reply.view('package-page', {
-        package: data
-      });
+    if (pkg.time && pkg.time.unpublished) {
+      // reply with unpublished package page
+      // reply.view('unpublished-package-page', {
+      //   package: pkg
+      // })
+    }
+
+    getBrowseData('depended', nameInfo.name, 0, 1000, function (er, dependents) {
+      pkg.dependents = getRandomAssortment(dependents, '/browse/depended/', nameInfo.name)
+
+      preparePackageForViewing(pkg, function (er, pkg) {
+        reply.view('package-page', {
+          package: pkg,
+          title: pkg.name
+        });
+      })
     })
   })
 }
@@ -64,8 +78,7 @@ function couchLookupName (nameInfo) {
 }
 
 function preparePackageForViewing (data, cb) {
-  data.starredBy = Object.keys(data.users || {}).sort()
-  var len = data.starredBy.length
+  data.starredBy = getRandomAssortment(Object.keys(data.users || {}).sort(), '/browse/star/', data.name)
 
   if (data.time && data['dist-tags']) {
     var v = data['dist-tags'].latest
@@ -96,10 +109,12 @@ function preparePackageForViewing (data, cb) {
   }
 
   if (data.homepage && typeof data.homepage !== 'string') {
-    if (Array.isArray(data.homepage))
+    if (Array.isArray(data.homepage)) {
       data.homepage = data.homepage[0]
-    if (typeof data.homepage !== 'string')
+    }
+    if (typeof data.homepage !== 'string') {
       delete data.homepage
+    }
   }
 
   if (data.readme && !data.readmeSrc) {
@@ -107,6 +122,29 @@ function preparePackageForViewing (data, cb) {
     data.readme = parseReadme(data)
   }
   gravatarPeople(data)
+
+  var l = data['dist-tags'] && data['dist-tags'].latest && data.versions && data.versions[data['dist-tags'].latest]
+  if (l) {
+    Object.keys(l).forEach(function (k) {
+      data[k] = data[k] || l[k]
+    })
+  }
+
+  data.showMaintainers = data.maintainers && (!data._npmUser || (data.publisherIsInMaintainersList && data.maintainers.length > 1));
+
+  if (data.dependencies) {
+    var MAX_DEPS = 50;
+    var deps = Object.keys(data.dependencies || {});
+    var len = deps.length;
+    if (len > MAX_DEPS) {
+      deps = deps.slice(0, MAX_DEPS);
+      deps.push({
+        noHref: true,
+        text: 'and ' + (len - MAX_DEPS) + ' more'
+      });
+    }
+    data.dependencies = deps;
+  }
 
   return cb(null, data);
 }
@@ -265,3 +303,21 @@ function gravatarPerson (p) {
   p.avatarMedium = gravatar(p.email || '', {s:100, d:'retro'}, true)
   p.avatarLarge = gravatar(p.email || '', {s:496, d:'retro'}, true)
 }
+
+function getRandomAssortment (items, urlRoot, name) {
+  var l = items.length;
+  var MAX_SHOW = 20;
+
+  if (l > MAX_SHOW) {
+    items = items.sort(function (a, b) {
+      return Math.random() * 2 - 1
+    }).slice(0, MAX_SHOW);
+    items.push({
+      url: urlRoot + name,
+      name: 'and ' + (l - MAX_SHOW) + ' more'
+    })
+  }
+
+  return items;
+}
+

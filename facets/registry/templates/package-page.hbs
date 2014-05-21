@@ -4,9 +4,11 @@
   <div id="package">
     <header>
       <h1>{{name}}</h1>
-{{!--       <%
-      var starClass = (package.users && profile && package.users[profile.name]) ? "star star-starred" : "star" %>
- --}}      <a href="#" class="<%= starClass %>" title="click here to star/unstar this package" data-name="<%= package.name %>"></a>
+{{!--       {{#if users[profile.name]}}
+        <a href="#" class="star star-starred" title="click here to star/unstar this package" data-name="{{name}}"></a>
+      {{else}}
+ --}}        <a href="#" class="star" title="click here to star/unstar this package" data-name="{{name}}"></a>
+      {{!-- {{/if}} --}}
     </header>
 
     {{#if deprecated}}
@@ -33,7 +35,7 @@
         <th>Last Published By</th>
         <td>
           <div class="user">
-            <a class="username" href="/~<%= package._npmUser.name %>">
+            <a class="username" href="/~{{_npmUser.name}}">
               {{#if _npmUser.avatar}}
               <img src="{{_npmUser.avatar}}" class="avatar">
               {{/if}}
@@ -90,14 +92,14 @@
         <td>{{{packageRepository repository}}}</td>
       </tr>
       {{/if}}
-{{!--       <% if (typeof package.homepage === 'string') { %>
-      <tr>
-        <th>Homepage</th>
-        <td>
-          <a href="<%= encodeURI(package.homepage) %>"><%= package.homepage.replace(/</g, '&lt;') %></a>
-        </td>
-      </tr>
-      <% } %> --}}
+      {{#if homepage}}
+        <tr>
+          <th>Homepage</th>
+          <td>
+            <a href="{{homepage}}">{{homepage}}</a>
+          </td>
+        </tr>
+      {{/if}}
       {{#if bugs.url}}
       <tr>
         <th>Bugs</th>
@@ -106,86 +108,49 @@
         </td>
       </tr>
       {{/if}}
-      {{!-- <tr>
-        <%
-          var deps = Object.keys(package.dependencies || {})
-          var l = deps.length
-        %>
-        <th>Dependencies<%= l > 5 ? ' (' + l + ')' : '' %></th>
-        <td>
-          <%
-          if (l === 0) {
-            %>None<%
-          } else {
-            var m = 200
-            if (l > m) deps = deps.slice(0, m)
-            deps.forEach(function(pkg, i) {
-              if (i > 0) { %>, <% }
-              %>
-              <a href="/package/<%= pkg %>"><%= pkg %></a><%
-            })
-            if (l > m) {
-              %>, and <%= l-m %> more<%
-            }
-          }
-          %>
-        </td>
-      </tr> --}}
-      {{!-- <%
-      var dependents = package.dependents
-      var l = dependents.length
-      if (dependents && l) { %>
       <tr>
-        <th>Dependents<%= l > 5 ? ' (' + l + ')' : '' %></th>
+        <th>Dependencies {{#if dependencies}}({{dependencies.length}}){{/if}}</th>
         <td>
-        <%
-        var l = dependents.length
-        var max = 20
-        if (l > max) {
-          // get a random assortment each time.
-          var dependents = dependents.sort(function (a, b) {
-            return Math.random() * 2 - 1
-          }).slice(0, max)
-          dependents.push({
-            url: '/browse/depended/' + package.name,
-            name: '<br>and ' + (l-max) + ' more'
-          })
-        }
-        dependents.forEach(function (d, i) {
-          if (i > 0) { %>, <% }
-          %><a href="<%= d.url %>"><%- d.name %></a><%
-        })
-        %>
+        {{#if dependencies}}
+          {{#each dependencies}}
+            {{#unless @last}}
+              <a href="/package/{{this}}">{{this}}</a>,
+            {{else}}
+              {{#unless noHref}}
+                <a href="/package/{{this}}">{{this}}</a>
+              {{else}}
+                <a>{{text}}</a>
+              {{/unless}}
+            {{/unless}}
+          {{~/each}}
+        {{else}}
+          None
+        {{/if}}
         </td>
       </tr>
-      <% } %> --}}
-
-      {{!-- <% if (package.users) {
-        var starredBy = package.starredBy
-        var l = starredBy.length
-      %>
+      {{#if dependents}}
       <tr>
-        <th>Starred by<%= l > 5 ? ' (' + l + ')' : '' %></th>
+        <th>Dependents {{#if dependents}}({{dependents.length}}){{/if}}</th>
         <td>
-          <%
-          var max = 20
-          if (l > max) {
-            starredBy = starredBy.sort(function (a, b) {
-              return Math.random() * 2 - 1
-            }).slice(0, max)
-          }
-          starredBy.forEach(function (user, i) {
-            if (i > 0) { %>, <% }
-            %><a href="/~<%= user %>"><%= user %></a><%
-          })
-          if (l > max) {
-            %><br><a href="/browse/star/<%= package.name %>">and
-            <%= (l-max) %> more</a><%
-          }
-          %>
+        {{#each dependents}}
+          <a href="{{url}}">{{name}}</a>{{#unless @last}},{{/unless}}
+        {{/each}}
         </td>
       </tr>
-      <% } %> --}}
+      {{/if}}
+      {{#if users}}
+      <tr>
+        <th>Starred by {{#if starredBy}}({{starredBy.length}}){{/if}}</th>
+        <td>
+        {{#each starredBy}}
+          {{#unless @last}}
+            <a href="/~{{this}}">{{this}}</a>,
+          {{else}}
+            <a href="{{url}}">{{name}}</a>
+          {{/unless}}
+        {{/each}}
+      </tr>
+      {{/if}}
     </table>
 
     <div class="details">

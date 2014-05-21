@@ -12,6 +12,7 @@ registry.version = '0.0.1';
 
 var server, p;
 var fake = require('./fixtures/fake.json'),
+    fakeDeps = require('./fixtures/fake-deps'),
     oriReadme = fake.readme;
 
 // prepare the server
@@ -33,8 +34,12 @@ describe('Retreiving packages from the registry', function () {
 
   before(function (done) {
     // mock couch call
-    server.methods.getPackageFromCouch = function (pkgName, cb) {
-      return cb(null, fake);
+    server.methods.getPackageFromCouch = function (pkgName, next) {
+      return next(null, fake);
+    }
+
+    server.methods.getBrowseData = function (type, arg, skip, limit, next) {
+      return next(null, fakeDeps);
     }
 
     done();
@@ -99,6 +104,16 @@ describe('Modifying the package before sending to the template', function () {
 
   it('turns relative URLs into real URLs', function (done) {
     expect(p.readme).to.include('/blob/master')
+    done()
+  })
+
+  it('includes the dependencies', function (done) {
+    expect(p.dependencies).to.exist
+    done()
+  })
+
+  it('includes the dependents', function (done) {
+    expect(p.dependents).to.exist
     done()
   })
 });
