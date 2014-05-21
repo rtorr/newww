@@ -5,7 +5,7 @@ var Lab = require('lab'),
     expect = Lab.expect;
 
 var Hapi = require('hapi'),
-    registry = require('../facets/registry');
+    registry = require('../');
 
 registry.name = 'registry';
 registry.version = '0.0.1';
@@ -20,8 +20,8 @@ before(function (done) {
   var serverOptions = {
     views: {
       engines: {hbs: 'handlebars'},
-      partialsPath: './hbs-partials',
-      helpersPath: './hbs-helpers'
+      partialsPath: '../../hbs-partials',
+      helpersPath: '../../hbs-helpers'
     }
   };
 

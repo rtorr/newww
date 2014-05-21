@@ -13,15 +13,7 @@ registry.version = '0.0.1';
 var server;
 
 before(function (done) {
-  var serverOptions = {
-    views: {
-      engines: {hbs: 'handlebars'},
-      partialsPath: './hbs-partials',
-      helpersPath: './hbs-helpers'
-    }
-  };
-
-  server = Hapi.createServer(serverOptions);
+  server = Hapi.createServer();
   server.pack.register(registry, done);
 });
 
