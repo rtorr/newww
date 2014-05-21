@@ -27,7 +27,7 @@ exports.register = function Couch (service, options, next) {
   }, {
     cache: {
       expiresIn: 60 * SECOND,
-      segment: '##package:'
+      segment: '##package'
     }
   });
 
@@ -39,11 +39,18 @@ exports.register = function Couch (service, options, next) {
 
       return next(null, data)
     })
-  // }, {
-  //   cache: {
-  //     expiresIn: 60 * SECOND,
-  //     segment: '##session:'
-  //   }
+  }, {
+    cache: {
+      expiresIn: 60 * SECOND,
+      segment: '##session'
+    }
+  });
+
+  service.method('getBrowseData', require('./browse')(anonCouch), {
+    cache: {
+      expiresIn: 60 * SECOND,
+      segment: '##browse'
+    }
   })
 
   next();

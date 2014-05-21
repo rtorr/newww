@@ -5,13 +5,13 @@
   <a href="http://en.gravatar.com/emails/"
     title="edit avatar at gravatar.com">
   {{/if}}
-  <img src="{{avatarLarge}}"
+  <img src="{{showprofile.avatarLarge}}"
     class="avatar-large" height=248 width=248 alt="">
   {{#if showprofile.isSelf}}
     </a>
   {{/if}}
 
-  <h1>{{name}}</h1>
+  <h1>{{showprofile.name}}</h1>
   {{!-- We'll get to this after login/logout + profile sessions gets involved --}}
   {{#if showprofile.isSelf}}
     <p><a href=/profile-edit>Edit Profile</a> -
@@ -33,55 +33,23 @@
 
   {{#if packages}}
     <h2>Packages by {{showprofile.name}}</h2>
-{{!--     <ul><%
-    var l = packages.length;
-    var max = 20;
-    if (l > max) {
-      // get a random assortment each time.
-      packages = packages.sort(function (a, b) {
-        return Math.random() * 2 - 1
-      }).slice(0, max)
-      packages.push({
-        url: '/browse/author/' + showprofile.name,
-        name: 'and ' + (l-max) + ' more',
-        description: ''
-      })
-    }
-    packages.forEach(function (d, i) {
-      %><li><a href="<%= d.url %>"><%= d.name %></a>
-        <%= d.description %></li><%
-    })
-    %></ul> --}}
+    <ul>
+      {{#each packages}}
+      <li><a href="{{url}}">{{name}}</a> {{description}}
+      </li>
+      {{/each}}
+    </ul>
   {{/if}}
 
-
-{{!--   <% if (starred && starred.length) {
-    %>
-    <h2>Packages Starred by <%= showprofile.name %></h2>
+  {{#if starred}}
+    <h2>Packages Starred by {{showprofile.name}}</h2>
     <ul>
-    <%
-    var l = starred.length;
-    var max = 20;
-    var userstar = {
-      url: '/browse/userstar/' + showprofile.name,
-      name: 'view ' + showprofile.name + '\'s starred packages',
-    }
-    if (l > max) {
-      // get a random assortment each time.
-      starred = starred.sort(function (a, b) {
-        return Math.random() * 2 - 1
-      }).slice(0, max)
-      userstar.name = 'and ' + (l-max) + ' more'
-    }
-    starred.forEach(function (d, i) {
-      %><li><a href="<%= d.url %>"><%= d.name %></a>
-        <%= d.description %></li><%
-    })
-    %>
-    <li><a href="<%= userstar.url %>"><%= userstar.name %></a></li>
-  </ul><%
-  }
-  %> --}}
+      {{#each starred}}
+      <li><a href="{{url}}">{{name}}</a> {{description}}
+      </li>
+      {{/each}}
+    </ul>
+  {{/if}}
 
   {{#if profile}}
     <a href='/logout/?done=/profile/{{showprofile.name}}'>log out</a>
