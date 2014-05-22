@@ -38,9 +38,9 @@ A facet is a mostly-self-involved piece of the website. There are currently four
 	* Healthchecks
 	* Content Security Policy logging
 
-Each facet is entirely self-contained, from routing, controlling, and templating. Template partials are *not* housed in facets, as they are cross-facet (i.e. headers, footers, etc). Also not contained in each facet are tests (for now - this may change), but that will be explained later.
+Each facet is entirely self-contained, from routing (in `index.js`), controlling (`show-[thing].js` and `presenters/[thing].js`), templating (`[thing].hbs`), and facet-specific tests (`test/*.js`). Template partials are *not* housed in facets, as they are cross-facet (i.e. headers, footers, etc).
 
-By self-containing each facet, we can turn them into microservices later, should we choose to do so.
+By self-containing each facet, we can turn them into microservices (which can be installed with npm) later, should we choose to do so.
 
 ### Services
 
@@ -54,8 +54,8 @@ _In `services/hapi-couchdb/`:_
   service.method('getPackageFromCouch', function (package, next) {
     anonCouch.get('/registry/' + package, function (er, cr, data) {
       next(er, data);
-    })
-  })
+    });
+  });
 ```
 
 _Then, in `facets/registry/package-page.js`:_
@@ -63,19 +63,21 @@ _Then, in `facets/registry/package-page.js`:_
 ```
   var getPackageFromCouch = request.server.methods.getPackageFromCouch;
 
-	// stuff
+	// stuff before getting package
 
-  getPackageFromCouch(couchLookupName(nameInfo), function (er, data) {
+  getPackageFromCouch(couchLookupName(name), function (er, data) {
 
-	// more stuff
+	// stuff now that we have the package
+	
+	reply.view('package-page', pkg);
 
-  })
+  });
 
 ```
 
 ## Tests
 
-There are tests! We're using [Lab](https://github.com/spumko/lab) as our testing utility. All tests are currently located in the `test/` folder and can be run with `npm test`. Tests are broken up by facet. Each facet's routing is tested in the test with the same name as the route, whereas each route's unit tests are tested separately.
+There are tests! We're using [Lab](https://github.com/spumko/lab) as our testing utility. Site-wide tests are currently located in the `test/` folder and can be run with `npm test`. Facet-specific tests are located in their respective `facet/[name]/test/` folders. 
 
 Expect this bit to evolve as things get more complex. But for now, just having tests is a HUGE improvement.
 

@@ -6,9 +6,7 @@ var server = new Hapi.Server(config.host, config.port, config.server)
 server.route({
   path: '/favicon.ico',
   method: 'GET',
-  handler: {
-    file: './favicon.ico'
-  }
+  handler: { file: './favicon.ico' }
 })
 
 server.route({
