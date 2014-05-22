@@ -4,12 +4,15 @@
   "description": "User Facet - profiles, login, logout, etc",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "lab -v"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "gravatar": "^1.0.6",
     "sanitizer": "^0.1.1"
+  },
+  "devDependencies": {
+    "lab": "^3.2.1"
   }
 }

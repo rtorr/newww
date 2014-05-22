@@ -16,8 +16,8 @@ module.exports = function (options) {
             fields: showprofile.fields,
             title: showprofile.name,
             // hiring: req.model.whoshiring,
-            packages: randomAssortment(packages),
-            starred: randomAssortment(starred)
+            packages: getRandomAssortment(packages, 'packages', request.params.name),
+            starred: getRandomAssortment(starred, 'starred', request.params.name)
           }
 
           reply.view('profile', profile)
@@ -27,7 +27,7 @@ module.exports = function (options) {
   }
 }
 
-function randomAssortment (items, browseKeyword, name) {
+function getRandomAssortment (items, browseKeyword, name) {
   var l = items.length;
   var MAX_SHOW = 20;
 
