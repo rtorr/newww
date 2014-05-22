@@ -1,4 +1,4 @@
-var transform = require('./profile').transform;
+var transform = require('./presenters/profile').transform;
 
 
 module.exports = function (options) {
