@@ -1,6 +1,6 @@
 {
   "name": "www-hapi",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A total rewrite of npm-www using hapijs",
   "main": "index.js",
   "scripts": {
