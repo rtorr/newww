@@ -1,84 +1,27 @@
-var Hapi = require('hapi'),
-    marked = require('marked'),
+var marked = require('marked'),
     sanitizer = require('sanitizer'),
     gravatar = require('gravatar').url,
     moment = require('moment'),
     url = require('url'),
     ghurl = require('github-url-from-git');
-// , metrics = require('../metrics-client.js')()
 
 
-module.exports = function (request, reply) {
-  var getPackageFromCouch = request.server.methods.getPackageFromCouch;
-  var getBrowseData = request.server.methods.getBrowseData;
+module.exports = function package (data, cb) {
 
-  var nameInfo = parseName(request.params.package)
-  var version = nameInfo.version || 'latest'
-
-  if (nameInfo.name !== encodeURIComponent(nameInfo.name)) {
-    var error = Hapi.error.badRequest('Invalid Package Name');
-    error.message = "The package you have requested is an invalid package name.\n\nTry again?"
-
-    return reply.view('error', error)
+  if (data.time && data.time.unpublished) {
+    var t = data.time.unpublished.time
+    data.unpubFromNow = moment(t)
   }
 
-  getPackageFromCouch(couchLookupName(nameInfo), function (er, pkg) {
-    if (er || pkg.error) {
-      var error = Hapi.error.notFound('Package Not Found');
-      error.message = "This package does not exist in the registry. Would you like to claim it for yourself?"
-
-      return reply.view('error', error)
+  if (data.homepage && typeof data.homepage !== 'string') {
+    if (Array.isArray(data.homepage)) {
+      data.homepage = data.homepage[0]
     }
 
-    if (pkg.time && pkg.time.unpublished) {
-      // reply with unpublished package page
-      // reply.view('unpublished-package-page', {
-      //   package: pkg
-      // })
+    if (typeof data.homepage !== 'string') {
+      delete data.homepage
     }
-
-    getBrowseData('depended', nameInfo.name, 0, 1000, function (er, dependents) {
-      pkg.dependents = getRandomAssortment(dependents, '/browse/depended/', nameInfo.name)
-
-      preparePackageForViewing(pkg, function (er, pkg) {
-        reply.view('package-page', {
-          package: pkg,
-          title: pkg.name
-        });
-      })
-    })
-  })
-}
-
-function parseName (params) {
-  var name, version;
-
-  if (typeof params === 'object') {
-    name = params.name;
-    version = params.version;
-  } else {
-    var p = params.split('@');
-    name = p.shift();
-    version = p.join('@');
   }
-
-  version = version || '';
-
-  return {name: name, version: version};
-}
-
-function couchLookupName (nameInfo) {
-  var name = nameInfo.name;
-
-  if (nameInfo.version) {
-    name += '/' + version;
-  }
-
-  return name;
-}
-
-function preparePackageForViewing (data, cb) {
-  data.starredBy = getRandomAssortment(Object.keys(data.users || {}).sort(), '/browse/star/', data.name)
 
   if (data.time && data['dist-tags']) {
     var v = data['dist-tags'].latest
@@ -103,47 +46,22 @@ function preparePackageForViewing (data, cb) {
     setLicense(data, v)
   }
 
-  if (data.time && data.time.unpublished) {
-    var t = data.time.unpublished.time
-    data.unpubFromNow = moment(t)
-  }
-
-  if (data.homepage && typeof data.homepage !== 'string') {
-    if (Array.isArray(data.homepage)) {
-      data.homepage = data.homepage[0]
-    }
-    if (typeof data.homepage !== 'string') {
-      delete data.homepage
-    }
-  }
+  data.showMaintainers = data.maintainers && (!data._npmUser || (data.publisherIsInMaintainersList && data.maintainers.length > 1));
 
   if (data.readme && !data.readmeSrc) {
     data.readmeSrc = data.readme
     data.readme = parseReadme(data)
   }
+
   gravatarPeople(data)
 
-  var l = data['dist-tags'] && data['dist-tags'].latest && data.versions && data.versions[data['dist-tags'].latest]
-  if (l) {
-    Object.keys(l).forEach(function (k) {
-      data[k] = data[k] || l[k]
-    })
-  }
+  data.starredBy = getRandomAssortment(Object.keys(data.users || {}).sort(), '/browse/star/', data.name)
+  data.dependents = getRandomAssortment(data.dependents, '/browse/depended/', data.name)
 
-  data.showMaintainers = data.maintainers && (!data._npmUser || (data.publisherIsInMaintainersList && data.maintainers.length > 1));
+  data = elevateLatestVersionInfo(data);
 
   if (data.dependencies) {
-    var MAX_DEPS = 50;
-    var deps = Object.keys(data.dependencies || {});
-    var len = deps.length;
-    if (len > MAX_DEPS) {
-      deps = deps.slice(0, MAX_DEPS);
-      deps.push({
-        noHref: true,
-        text: 'and ' + (len - MAX_DEPS) + ' more'
-      });
-    }
-    data.dependencies = deps;
+    data.dependencies = processDependencies(data.dependencies);
   }
 
   return cb(null, data);
@@ -321,3 +239,28 @@ function getRandomAssortment (items, urlRoot, name) {
   return items;
 }
 
+function elevateLatestVersionInfo (data) {
+
+  var l = data['dist-tags'] && data['dist-tags'].latest && data.versions && data.versions[data['dist-tags'].latest]
+  if (l) {
+    Object.keys(l).forEach(function (k) {
+      data[k] = data[k] || l[k]
+    })
+  }
+
+  return data;
+}
+
+function processDependencies (dependencies, max) {
+  var MAX_DEPS = max || 50;
+  var deps = Object.keys(dependencies || {});
+  var len = deps.length;
+  if (len > MAX_DEPS) {
+    deps = deps.slice(0, MAX_DEPS);
+    deps.push({
+      noHref: true,
+      text: 'and ' + (len - MAX_DEPS) + ' more'
+    });
+  }
+  return deps;
+}
