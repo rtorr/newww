@@ -1,0 +1,30 @@
+{
+  "name": "npm-registry",
+  "version": "0.0.1",
+  "dependencies": {
+    "github-url-from-git": {
+      "version": "1.1.1",
+      "from": "github-url-from-git@",
+      "resolved": "https://registry.npmjs.org/github-url-from-git/-/github-url-from-git-1.1.1.tgz"
+    },
+    "gravatar": {
+      "version": "1.0.6",
+      "from": "gravatar@",
+      "resolved": "https://registry.npmjs.org/gravatar/-/gravatar-1.0.6.tgz"
+    },
+    "marked": {
+      "version": "0.3.2",
+      "from": "marked@"
+    },
+    "moment": {
+      "version": "2.6.0",
+      "from": "moment@",
+      "resolved": "https://registry.npmjs.org/moment/-/moment-2.6.0.tgz"
+    },
+    "sanitizer": {
+      "version": "0.1.1",
+      "from": "sanitizer@",
+      "resolved": "https://registry.npmjs.org/sanitizer/-/sanitizer-0.1.1.tgz"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "npm-user",
+  "version": "0.0.1",
+  "dependencies": {
+    "gravatar": {
+      "version": "1.0.6",
+      "from": "gravatar@"
+    },
+    "sanitizer": {
+      "version": "0.1.1",
+      "from": "sanitizer@"
+    }
+  }
+}
