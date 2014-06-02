@@ -9,7 +9,18 @@ There are two major pieces to the app, facets and services. Both are implemented
 
 ### Facets
 
-A facet is a mostly-self-involved piece of the website. There are currently four facets:
+A **facet** is a mostly-self-involved piece of the website. Each facet is entirely self-contained, and includes the following pieces:
+
+* Routes (in `index.js`)
+* Template controls (`show-[thing].js` for getting information from services and `presenters/[thing].js` for template-based utilities)
+* Templates (`[thing].hbs`)
+* Facet-specific tests (`test/*.js`). 
+
+Template partials are *not* housed in facets, as they are cross-facet (i.e. headers, footers, etc).
+
+By self-containing each facet, we can turn them into microservices (which can be installed with npm) later, should we choose to do so.
+
+There are currently four facets:
 
 * The **company** facet focuses on all the npm, Inc. bits:
 	* /
@@ -38,9 +49,6 @@ A facet is a mostly-self-involved piece of the website. There are currently four
 	* Healthchecks
 	* Content Security Policy logging
 
-Each facet is entirely self-contained, from routing (in `index.js`), controlling (`show-[thing].js` and `presenters/[thing].js`), templating (`[thing].hbs`), and facet-specific tests (`test/*.js`). Template partials are *not* housed in facets, as they are cross-facet (i.e. headers, footers, etc).
-
-By self-containing each facet, we can turn them into microservices (which can be installed with npm) later, should we choose to do so.
 
 ### Services
 
