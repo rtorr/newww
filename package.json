@@ -2,7 +2,7 @@
   "name": "www-hapi",
   "version": "0.0.3",
   "description": "A total rewrite of npm-www using hapijs",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "lab -v",
     "prestart": "node_modules/.bin/stylus stylus/index.styl --use nib --out static/css/",

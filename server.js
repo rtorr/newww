@@ -22,12 +22,20 @@ server.route({
 });
 
 server.pack.require({
+  'hapi-auth-cookie': null,
   './facets/company': null,
   './facets/registry': null,
   './facets/user': config.user,
   './services/hapi-couchdb': config.couch
 }, function(err) {
     if (err) throw err;
+
+    server.auth.strategy('session', 'cookie', 'try', {
+      password: config.authPass,
+      cookie: 's',
+      redirectTo: '/login',
+    });
+
     server.start(function() {
         console.log('Hapi server started @ ' + server.info.uri);
     });
