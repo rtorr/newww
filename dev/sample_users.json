@@ -1,0 +1,1702 @@
+{
+  "docs": [
+    {
+      "_id": "_design/_auth",
+      "language": "javascript",
+      "lists": {
+        "index": "function (head,req) {\n    var row\n      , out = {}\n      , id, data\n    while (row = getRow()) {\n      id = row.id.replace(/^org\\.couchdb\\.user:/, '')\n      data = row.value\n      delete data._id\n      delete data._rev\n      delete data.salt\n      delete data.password_sha\n      delete data.type\n      delete data.roles\n      delete data._deleted_conflicts\n      out[id] = data\n    }\n    send(toJSON(out))\n  }",
+        "email": "function (head, req) {\n    var row\n      , data\n      , id\n      , email = req.query.email || undefined\n      , out = []\n    while (row = getRow()) {\n      id = row.id.replace(/^org\\.couchdb\\.user:/, '')\n      data = row.value\n      var dm = data.email || undefined\n      if (data.email !== email) continue\n      out.push(row.value.name)\n    }\n    send(toJSON(out))\n  }"
+      },
+      "validate_doc_update": "\n    function(newDoc, oldDoc, userCtx, secObj) {\n        if (newDoc._deleted === true) {\n            // allow deletes by admins and matching users\n            // without checking the other fields\n            if ((userCtx.roles.indexOf('_admin') !== -1) ||\n                (userCtx.name == oldDoc.name)) {\n                return;\n            } else {\n                throw({forbidden: 'Only admins may delete other user docs.'});\n            }\n        }\n\n        if ((oldDoc && oldDoc.type !== 'user') || newDoc.type !== 'user') {\n            throw({forbidden : 'doc.type must be user'});\n        } // we only allow user docs for now\n\n        if (!newDoc.name) {\n            throw({forbidden: 'doc.name is required'});\n        }\n\n        if (!newDoc.roles) {\n            throw({forbidden: 'doc.roles must exist'});\n        }\n\n        if (!isArray(newDoc.roles)) {\n            throw({forbidden: 'doc.roles must be an array'});\n        }\n\n        for (var idx = 0; idx < newDoc.roles.length; idx++) {\n            if (typeof newDoc.roles[idx] !== 'string') {\n                throw({forbidden: 'doc.roles can only contain strings'});\n            }\n        }\n\n        if (newDoc._id !== ('org.couchdb.user:' + newDoc.name)) {\n            throw({\n                forbidden: 'Doc ID must be of the form org.couchdb.user:name'\n            });\n        }\n\n        if (oldDoc) { // validate all updates\n            if (oldDoc.name !== newDoc.name) {\n                throw({forbidden: 'Usernames can not be changed.'});\n            }\n        }\n\n        if (newDoc.password_sha && !newDoc.salt) {\n            throw({\n                forbidden: 'Users with password_sha must have a salt.' +\n                    'See /_utils/script/couch.js for example code.'\n            });\n        }\n\n        var is_server_or_database_admin = function(userCtx, secObj) {\n            // see if the user is a server admin\n            if(userCtx.roles.indexOf('_admin') !== -1) {\n                return true; // a server admin\n            }\n\n            // see if the user a database admin specified by name\n            if(secObj && secObj.admins && secObj.admins.names) {\n                if(secObj.admins.names.indexOf(userCtx.name) !== -1) {\n                    return true; // database admin\n                }\n            }\n\n            // see if the user a database admin specified by role\n            if(secObj && secObj.admins && secObj.admins.roles) {\n                var db_roles = secObj.admins.roles;\n                for(var idx = 0; idx < userCtx.roles.length; idx++) {\n                    var user_role = userCtx.roles[idx];\n                    if(db_roles.indexOf(user_role) !== -1) {\n                        return true; // role matches!\n                    }\n                }\n            }\n\n            return false; // default to no admin\n        }\n\n        if (!is_server_or_database_admin(userCtx, secObj)) {\n            if (oldDoc) { // validate non-admin updates\n                if (userCtx.name !== newDoc.name) {\n                    throw({\n                        forbidden: 'You may only update your own user document.'\n                    });\n                }\n                // validate role updates\n                var oldRoles = oldDoc.roles.sort();\n                var newRoles = newDoc.roles.sort();\n\n                if (oldRoles.length !== newRoles.length) {\n                    throw({forbidden: 'Only _admin may edit roles'});\n                }\n\n                for (var i = 0; i < oldRoles.length; i++) {\n                    if (oldRoles[i] !== newRoles[i]) {\n                        throw({forbidden: 'Only _admin may edit roles'});\n                    }\n                }\n            } else if (newDoc.roles.length > 0) {\n                throw({forbidden: 'Only _admin may set roles'});\n            }\n        }\n\n        // no system roles in users db\n        for (var i = 0; i < newDoc.roles.length; i++) {\n            if (newDoc.roles[i][0] === '_') {\n                throw({\n                    forbidden:\n                    'No system roles (starting with underscore) in users db.'\n                });\n            }\n        }\n\n        // no system names as names\n        if (newDoc.name[0] === '_') {\n            throw({forbidden: 'Username may not start with underscore.'});\n        }\n\n        var badUserNameChars = [':'];\n\n        for (var i = 0; i < badUserNameChars.length; i++) {\n            if (newDoc.name.indexOf(badUserNameChars[i]) >= 0) {\n                throw({forbidden: 'Character `' + badUserNameChars[i] +\n                        '` is not allowed in usernames.'});\n            }\n        }\n    }\n",
+      "views": {
+        "listAll": {
+          "map": "function (doc) { return emit(doc._id, doc) }"
+        },
+        "invalidUser": {
+          "map": "function (doc) {\n    var errors = []\n    if (doc.type !== 'user') {\n      errors.push('doc.type must be user')\n    }\n\n    if (!doc.name) {\n      errors.push('doc.name is required')\n    }\n\n    if (doc.roles && !isArray(doc.roles)) {\n      errors.push('doc.roles must be an array')\n    }\n\n    if (doc._id !== ('org.couchdb.user:' + doc.name)) {\n      errors.push('Doc ID must be of the form org.couchdb.user:name')\n    }\n\n    if (doc.name !== doc.name.toLowerCase()) {\n      errors.push('Name must be lower-case')\n    }\n\n    if (doc.name !== encodeURIComponent(doc.name)) {\n      errors.push('Name cannot contain non-url-safe characters')\n    }\n\n    if (doc.name.charAt(0) === '.') {\n      errors.push('Name cannot start with .')\n    }\n\n    if (!(doc.email && doc.email.match(/^.+@.+\\..+$/))) {\n      errors.push('Email must be an email address')\n    }\n\n    if (doc.password_sha && !doc.salt) {\n      errors.push('Users with password_sha must have a salt.')\n    }\n    if (!errors.length) return\n    emit([doc.name, doc.email], errors)\n  }"
+        },
+        "invalid": {
+          "map": "function (doc) {\n    if (doc.type !== 'user') {\n      return emit(['doc.type must be user', doc.email, doc.name], 1)\n    }\n\n    if (!doc.name) {\n      return emit(['doc.name is required', doc.email, doc.name], 1)\n    }\n\n    if (doc.roles && !isArray(doc.roles)) {\n      return emit(['doc.roles must be an array', doc.email, doc.name], 1)\n    }\n\n    if (doc._id !== ('org.couchdb.user:' + doc.name)) {\n      return emit(['Doc ID must be of the form org.couchdb.user:name', doc.email, doc.name], 1)\n    }\n\n    if (doc.name !== doc.name.toLowerCase()) {\n      return emit(['Name must be lower-case', doc.email, doc.name], 1)\n    }\n\n    if (doc.name !== encodeURIComponent(doc.name)) {\n      return emit(['Name cannot contain non-url-safe characters', doc.email, doc.name], 1)\n    }\n\n    if (doc.name.charAt(0) === '.') {\n      return emit(['Name cannot start with .', doc.email, doc.name], 1)\n    }\n\n    if (!(doc.email && doc.email.match(/^.+@.+\\..+$/))) {\n      return emit(['Email must be an email address', doc.email, doc.name], 1)\n    }\n\n    if (doc.password_sha && !doc.salt) {\n      return emit(['Users with password_sha must have a salt.', doc.email, doc.name], 1)\n    }\n  }",
+          "reduce": "_sum"
+        },
+        "conflicts": {
+          "map": "function (doc) {\n  if (doc._conflicts) {\n    for (var i = 0; i < doc._conflicts.length; i++) {\n      emit([doc._id, doc._conflicts[i]], 1)\n    }\n  }\n}",
+          "reduce": "_sum"
+        }
+      }
+    },
+    {
+      "_id": "org.couchdb.user:admin",
+      "_rev": "1-809f9374da2de1583d6ddd734cf6aab8",
+      "name": "admin",
+      "salt": "5c2b1432c10ec1bace25169e88eaf9e912995477bd6abadfa0f264883b3b",
+      "password_sha": "37bb39679d9c8081aeb8de87510cf3839028de26",
+      "email": "admin@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2014-02-06T20:36:41.050Z"
+    },
+    {
+      "_id": "org.couchdb.user:alpha",
+      "name": "alpha",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "alpha@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-12-09T22:38:06.264Z"
+    },
+    {
+      "_id": "org.couchdb.user:beta",
+      "name": "beta",
+      "roles": [],
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2012-09-26T06:46:48.050Z",
+      "email": "beta@example.com"
+    },
+    {
+      "_id": "org.couchdb.user:chi",
+      "name": "chi",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "chi@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-09-21T02:40:49.517Z",
+      "avatar": "https://secure.gravatar.com/avatar/f2bc18b7c2e3f29d293d894688e2ac14?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/f2bc18b7c2e3f29d293d894688e2ac14?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/f2bc18b7c2e3f29d293d894688e2ac14?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "noferov@gmail.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:noferov@gmail.com\">noferov@gmail.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "noferi mickaël",
+      "github": "https://github.com/r043v",
+      "twitter": "https://twitter.com/r043v",
+      "appdotnet": "",
+      "homepage": "http://procvor.free.fr",
+      "freenode": "chi"
+    },
+    {
+      "_id": "org.couchdb.user:delta",
+      "name": "delta",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "delta@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-11-01T14:20:53.688Z"
+    },
+    {
+      "_id": "org.couchdb.user:echo",
+      "name": "echo",
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2013-04-17T10:05:41.088Z",
+      "email": "echo@example.com",
+      "mustChangePass": "false",
+      "avatar": "https://secure.gravatar.com/avatar/c612da2dba8fc89a6577324e21f71676?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/c612da2dba8fc89a6577324e21f71676?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/c612da2dba8fc89a6577324e21f71676?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "a@a.a",
+          "title": "Email",
+          "show": "<a href=\"mailto:a@a.a\">a@a.a</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "",
+      "github": "",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "",
+      "freenode": "",
+      "roles": [],
+      "goober": 0.7381158452481031
+    },
+    {
+      "_id": "org.couchdb.user:gamma",
+      "name": "gamma",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "gamma@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2012-04-18T14:33:36.061Z"
+    },
+    {
+      "_id": "org.couchdb.user:epsilon",
+      "name": "epsilon",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "epsilon@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2012-04-18T14:35:04.504Z"
+    },
+    {
+      "_id": "org.couchdb.user:zeta",
+      "name": "zeta",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "zeta@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-02-06T02:38:47.244Z"
+    },
+    {
+      "_id": "org.couchdb.user:eta",
+      "name": "eta",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "eta@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-06-25T03:41:27.015Z"
+    },
+    {
+      "_id": "org.couchdb.user:theta",
+      "name": "theta",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "theta@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-06-08T09:31:26.807Z"
+    },
+    {
+      "_id": "org.couchdb.user:iota",
+      "name": "iota",
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2013-11-02T07:47:45.928Z",
+      "email": "iota@example.com",
+      "avatar": "https://secure.gravatar.com/avatar/556f84c5a445d6be502f7ac2b09eb3df?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/556f84c5a445d6be502f7ac2b09eb3df?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/556f84c5a445d6be502f7ac2b09eb3df?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "921988200@qq.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:921988200@qq.com\">921988200@qq.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "",
+      "github": "",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "",
+      "freenode": "",
+      "roles": [],
+      "mustChangePass": false
+    },
+    {
+      "_id": "org.couchdb.user:kappa",
+      "name": "kappa",
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2013-11-22T06:59:58.321Z",
+      "email": "kappa@example.com",
+      "avatar": "https://secure.gravatar.com/avatar/723ad9e29056e993cdfe9686697930a0?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/723ad9e29056e993cdfe9686697930a0?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/723ad9e29056e993cdfe9686697930a0?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "summer.wxy@gmail.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:summer.wxy@gmail.com\">summer.wxy@gmail.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "Lin Yu Wei",
+      "github": "",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "",
+      "freenode": "",
+      "roles": [],
+      "mustChangePass": false
+    },
+    {
+      "_id": "org.couchdb.user:lambda",
+      "name": "lambda",
+      "roles": [],
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2013-08-15T17:57:37.746Z",
+      "email": "lambda@example.com"
+    },
+    {
+      "_id": "org.couchdb.user:mu",
+      "name": "mu",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "mu@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-02-23T15:02:10.061Z",
+      "avatar": "https://secure.gravatar.com/avatar/3089c1d9bc8f6224f005f6aec5e16492?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/3089c1d9bc8f6224f005f6aec5e16492?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/3089c1d9bc8f6224f005f6aec5e16492?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "me@factor.cc",
+          "title": "Email",
+          "show": "<a href=\"mailto:me@factor.cc\">me@factor.cc</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "Robin",
+      "github": "mu",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "https://factor.cc/",
+      "freenode": "exa"
+    },
+    {
+      "_id": "org.couchdb.user:nu",
+      "name": "nu",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "nu@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2014-01-26T07:16:09.751Z"
+    },
+    {
+      "_id": "org.couchdb.user:ksi",
+      "name": "ksi",
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2013-12-24T14:38:15.352Z",
+      "email": "ksi@example.com",
+      "avatar": "https://secure.gravatar.com/avatar/fc17dacad632101c29c589f28916b918?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/fc17dacad632101c29c589f28916b918?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/fc17dacad632101c29c589f28916b918?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "ksi@sina.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:ksi@sina.com\">ksi@sina.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "",
+      "github": "",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "",
+      "freenode": "",
+      "roles": []
+    },
+    {
+      "_id": "org.couchdb.user:omicron",
+      "name": "omicron",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "omicron@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-04-16T17:14:23.541Z",
+      "avatar": "https://secure.gravatar.com/avatar/cd40cde8ced4ccb972611aaca7c701b8?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/cd40cde8ced4ccb972611aaca7c701b8?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/cd40cde8ced4ccb972611aaca7c701b8?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "bumbleskunk@gmail.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:bumbleskunk@gmail.com\">bumbleskunk@gmail.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "Sebastian Goodman",
+      "github": "omicron",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "",
+      "freenode": ""
+    },
+    {
+      "_id": "org.couchdb.user:pi",
+      "name": "pi",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "pi@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-03-07T15:20:37.663Z"
+    },
+    {
+      "_id": "org.couchdb.user:rho",
+      "name": "rho",
+      "roles": [],
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2013-12-03T10:24:35.616Z",
+      "email": "rho@example.com"
+    },
+    {
+      "_id": "org.couchdb.user:sigma",
+      "name": "sigma",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "sigma@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-06-10T04:41:09.755Z",
+      "avatar": "https://secure.gravatar.com/avatar/e0b0049fcc75b7d013b0f3537e87ebd8?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/e0b0049fcc75b7d013b0f3537e87ebd8?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/e0b0049fcc75b7d013b0f3537e87ebd8?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "npm@2op.info",
+          "title": "Email",
+          "show": "<a href=\"mailto:npm@2op.info\">npm@2op.info</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "",
+      "github": "",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "",
+      "freenode": ""
+    },
+    {
+      "_id": "org.couchdb.user:tau",
+      "name": "tau",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "tau@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-06-03T17:12:53.201Z",
+      "avatar": "https://secure.gravatar.com/avatar/f4b37fd16f9e29389369f2e9565f91c7?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/f4b37fd16f9e29389369f2e9565f91c7?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/f4b37fd16f9e29389369f2e9565f91c7?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "fpinna@vivocha.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:fpinna@vivocha.com\">fpinna@vivocha.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "Federico Pinna",
+      "github": "https://github.com/tau",
+      "twitter": "@tau",
+      "appdotnet": "",
+      "homepage": "www.tau.com",
+      "freenode": ""
+    },
+    {
+      "_id": "org.couchdb.user:upsilon",
+      "name": "upsilon",
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2013-11-12T18:11:26.251Z",
+      "email": "upsilon@example.com",
+      "avatar": "https://secure.gravatar.com/avatar/72ed182720b3a5f65b9c7e46b2668fde?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/72ed182720b3a5f65b9c7e46b2668fde?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/72ed182720b3a5f65b9c7e46b2668fde?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "norman.heino@gmail.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:norman.heino@gmail.com\">norman.heino@gmail.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "Norman Heino",
+      "github": "upsilon",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "",
+      "freenode": "",
+      "roles": []
+    },
+    {
+      "_id": "org.couchdb.user:phi",
+      "name": "phi",
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2013-11-01T01:35:01.797Z",
+      "email": "phi@example.com",
+      "avatar": "https://secure.gravatar.com/avatar/4cde38a26a733d7f3a227eab3a7b7e7e?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/4cde38a26a733d7f3a227eab3a7b7e7e?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/4cde38a26a733d7f3a227eab3a7b7e7e?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "florian.schild@google.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:florian.schild@google.com\">florian.schild@google.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "",
+      "github": "",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "",
+      "freenode": "",
+      "roles": []
+    },
+    {
+      "_id": "org.couchdb.user:psi",
+      "name": "psi",
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2013-08-27T05:43:42.834Z",
+      "email": "psi@example.com",
+      "avatar": "https://secure.gravatar.com/avatar/8f8f604430a6a2116749fad87c9c86d5?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/8f8f604430a6a2116749fad87c9c86d5?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/8f8f604430a6a2116749fad87c9c86d5?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "alexander.majorov@gmail.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:alexander.majorov@gmail.com\">alexander.majorov@gmail.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "Alexander",
+      "github": "https://github.com/i0z",
+      "twitter": "https://twitter.com/0dma",
+      "appdotnet": "",
+      "homepage": "http://majorov.su/",
+      "freenode": "",
+      "roles": []
+    },
+    {
+      "_id": "org.couchdb.user:omega",
+      "name": "omega",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "omega@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2012-07-09T15:02:02.608Z"
+    },
+    {
+      "_id": "org.couchdb.user:bravo",
+      "name": "bravo",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "bravo@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-12-02T16:59:13.466Z",
+      "fullname": "",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "orzbravo@gmail.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:orzbravo@gmail.com\">orzbravo@gmail.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "http://github.com/bravo",
+          "title": "Github",
+          "show": "<a rel=\"me\" href=\"https://github.com/http://github.com/bravo\">http://github.com/bravo</a>"
+        },
+        {
+          "name": "twitter",
+          "value": "bravo",
+          "title": "Twitter",
+          "show": "<a rel=\"me\" href=\"https://twitter.com/bravo\">@bravo</a>"
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "http://bravo.net/",
+          "title": "Homepage",
+          "show": "<a rel=\"me\" href=\"http://bravo.net/\">http://bravo.net/</a>"
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "avatarMedium": "https://secure.gravatar.com/avatar/6215fbf9fcf7b65bcd1dce838a7fdb03?s=100&d=retro",
+      "github": "bravo",
+      "homepage": "http://bravo.net/",
+      "twitter": "bravo",
+      "avatar": "https://secure.gravatar.com/avatar/6215fbf9fcf7b65bcd1dce838a7fdb03?s=50&d=retro",
+      "freenode": "",
+      "avatarLarge": "https://secure.gravatar.com/avatar/6215fbf9fcf7b65bcd1dce838a7fdb03?s=496&d=retro",
+      "appdotnet": ""
+    },
+    {
+      "_id": "org.couchdb.user:charlie",
+      "name": "charlie",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "charlie@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-06-11T09:31:11.645Z",
+      "fullname": "Sebastian Krüger",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "Sebastian Krüger",
+          "title": "Full Name",
+          "show": "Sebastian Krüger"
+        },
+        {
+          "name": "email",
+          "value": "sebastian.krueger@theblackestbox.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:sebastian.krueger@theblackestbox.com\">sebastian.krueger@theblackestbox.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "https://github.com/charlie",
+          "title": "Github",
+          "show": "<a rel=\"me\" href=\"https://github.com/https://github.com/charlie\">https://github.com/charlie</a>"
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "http://theblackestbox.net",
+          "title": "Homepage",
+          "show": "<a rel=\"me\" href=\"http://theblackestbox.net/\">http://theblackestbox.net</a>"
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "avatarMedium": "https://secure.gravatar.com/avatar/b3303d2eb5f289e91bc2e8513a74aa9b?s=100&d=retro",
+      "github": "https://github.com/charlie",
+      "homepage": "http://theblackestbox.net",
+      "twitter": "",
+      "avatar": "https://secure.gravatar.com/avatar/b3303d2eb5f289e91bc2e8513a74aa9b?s=50&d=retro",
+      "freenode": "",
+      "avatarLarge": "https://secure.gravatar.com/avatar/b3303d2eb5f289e91bc2e8513a74aa9b?s=496&d=retro",
+      "appdotnet": "",
+      "mustChangePass": false
+    },
+    {
+      "_id": "org.couchdb.user:alfa",
+      "name": "alfa",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "alfa@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2011-08-22T23:51:02.683Z"
+    },
+    {
+      "_id": "org.couchdb.user:foxtrot",
+      "name": "foxtrot",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "foxtrot@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-08-12T12:38:53.179Z",
+      "avatar": "https://secure.gravatar.com/avatar/c291b159745daa668ce1939738a2a0c0?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/c291b159745daa668ce1939738a2a0c0?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/c291b159745daa668ce1939738a2a0c0?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "npm@foxtrot.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:npm@foxtrot.com\">npm@foxtrot.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "101 Loops",
+      "github": "",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "http://foxtrot.com",
+      "freenode": ""
+    },
+    {
+      "_id": "org.couchdb.user:golf",
+      "name": "golf",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "golf@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-10-14T08:41:47.788Z"
+    },
+    {
+      "_id": "org.couchdb.user:hotel",
+      "name": "hotel",
+      "roles": [],
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2013-04-04T17:48:34.452Z",
+      "email": "hotel@example.com"
+    },
+    {
+      "_id": "org.couchdb.user:india",
+      "name": "india",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "india@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2012-11-27T06:39:05.948Z",
+      "fullname": "shi san",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "shi san",
+          "title": "Full Name",
+          "show": "shi san"
+        },
+        {
+          "name": "email",
+          "value": "indiashisan@gmail.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:indiashisan@gmail.com\">indiashisan@gmail.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "https://github.com/india",
+          "title": "Github",
+          "show": "<a href=\"https://github.com/https://github.com/india\">https://github.com/india</a>"
+        },
+        {
+          "name": "twitter",
+          "value": "india",
+          "title": "Twitter",
+          "show": "<a href=\"https://twitter.com/india\">@india</a>"
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "avatarMedium": "https://secure.gravatar.com/avatar/5ab12ba4fb427722907d71485850fe1a?s=100&d=retro",
+      "github": "india",
+      "homepage": "",
+      "twitter": "india",
+      "avatar": "https://secure.gravatar.com/avatar/5ab12ba4fb427722907d71485850fe1a?s=50&d=retro",
+      "freenode": "",
+      "avatarLarge": "https://secure.gravatar.com/avatar/5ab12ba4fb427722907d71485850fe1a?s=496&d=retro",
+      "appdotnet": ""
+    },
+    {
+      "_id": "org.couchdb.user:juliett",
+      "name": "juliett",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "juliett@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2012-05-11T05:20:26.652Z"
+    },
+    {
+      "_id": "org.couchdb.user:kilo.",
+      "name": "kilo.",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "kilo.@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-12-12T16:59:28.626Z",
+      "mustChangePass": false
+    },
+    {
+      "_id": "org.couchdb.user:lima",
+      "name": "lima",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "lima@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-10-29T09:27:56.241Z"
+    },
+    {
+      "_id": "org.couchdb.user:mike",
+      "name": "mike",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "mike@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-07-27T13:27:42.711Z"
+    },
+    {
+      "_id": "org.couchdb.user:november",
+      "name": "november",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "november@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-09-10T15:54:58.263Z"
+    },
+    {
+      "_id": "org.couchdb.user:oscar",
+      "name": "oscar",
+      "roles": [],
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2013-03-05T08:34:38.051Z",
+      "email": "oscar@example.com"
+    },
+    {
+      "_id": "org.couchdb.user:papa",
+      "name": "papa",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "papa@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-11-05T23:36:38.771Z"
+    },
+    {
+      "_id": "org.couchdb.user:quebec",
+      "name": "quebec",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "quebec@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2014-01-08T18:31:44.389Z"
+    },
+    {
+      "_id": "org.couchdb.user:romeo",
+      "name": "romeo",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "romeo@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2014-01-08T18:32:35.086Z"
+    },
+    {
+      "_id": "org.couchdb.user:sierra",
+      "name": "sierra",
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2013-07-19T01:27:42.185Z",
+      "email": "sierra@example.com",
+      "avatar": "https://secure.gravatar.com/avatar/0aa53adfd7a07fbad9fbc732fc84e89e?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/0aa53adfd7a07fbad9fbc732fc84e89e?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/0aa53adfd7a07fbad9fbc732fc84e89e?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "autonomousmachine@gmail.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:autonomousmachine@gmail.com\">autonomousmachine@gmail.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "Mathias Horrigan",
+      "github": "",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "",
+      "freenode": "",
+      "roles": []
+    },
+    {
+      "_id": "org.couchdb.user:tango",
+      "name": "tango",
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2012-12-03T08:22:29.699Z",
+      "email": "tango@example.com",
+      "avatar": "https://secure.gravatar.com/avatar/78e05c3fe6aa5c998911b291ab5c6620?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/78e05c3fe6aa5c998911b291ab5c6620?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/78e05c3fe6aa5c998911b291ab5c6620?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "tango1@139.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:tango1@139.com\">tango1@139.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "刘慧",
+      "github": "",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "",
+      "freenode": "",
+      "roles": []
+    },
+    {
+      "_id": "org.couchdb.user:uniform",
+      "name": "uniform",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "uniform@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2012-03-23T05:02:36.817Z"
+    },
+    {
+      "_id": "org.couchdb.user:victor",
+      "name": "victor",
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2013-12-06T02:17:19.447Z",
+      "email": "victor@example.com",
+      "avatar": "https://secure.gravatar.com/avatar/4a0cbd949251fc402ceb44579a7f4985?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/4a0cbd949251fc402ceb44579a7f4985?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/4a0cbd949251fc402ceb44579a7f4985?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "alan@victor.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:alan@victor.com\">alan@victor.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "Alan Languirand",
+      "github": "alanguir",
+      "twitter": "victor",
+      "appdotnet": "",
+      "homepage": "",
+      "freenode": "",
+      "roles": []
+    },
+    {
+      "_id": "org.couchdb.user:whiskey",
+      "name": "whiskey",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "whiskey@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-11-08T12:20:14.402Z",
+      "avatar": "https://secure.gravatar.com/avatar/220e14854e6edcda22c2bbd0a261f4eb?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/220e14854e6edcda22c2bbd0a261f4eb?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/220e14854e6edcda22c2bbd0a261f4eb?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "xx@ccxx.cc",
+          "title": "Email",
+          "show": "<a href=\"mailto:xx@ccxx.cc\">xx@ccxx.cc</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "Vladimir",
+      "github": "whiskey",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "",
+      "freenode": ""
+    },
+    {
+      "_id": "org.couchdb.user:xray",
+      "name": "xray",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "xray@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-11-08T04:18:34.706Z",
+      "avatar": "https://secure.gravatar.com/avatar/e68438055afdc0e0ffc810a06a812aed?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/e68438055afdc0e0ffc810a06a812aed?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/e68438055afdc0e0ffc810a06a812aed?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "yggdra@ymail.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:yggdra@ymail.com\">yggdra@ymail.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "Decky Fiyemonda",
+      "github": "https://github.com/xray",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "",
+      "freenode": ""
+    },
+    {
+      "_id": "org.couchdb.user:yankee",
+      "name": "yankee",
+      "salt": "cookie",
+      "password_sha": "nomnomcake",
+      "email": "yankee@example.com",
+      "type": "user",
+      "roles": [],
+      "date": "2013-10-30T05:43:48.306Z"
+    },
+    {
+      "_id": "org.couchdb.user:zulu",
+      "name": "zulu",
+      "type": "user",
+      "password_sha": "nomnomcake",
+      "salt": "cookie",
+      "date": "2013-07-25T20:28:57.794Z",
+      "email": "zulu@example.com",
+      "avatar": "https://secure.gravatar.com/avatar/bdff2cc237e0f423706563be675e6648?s=50&d=retro",
+      "avatarMedium": "https://secure.gravatar.com/avatar/bdff2cc237e0f423706563be675e6648?s=100&d=retro",
+      "avatarLarge": "https://secure.gravatar.com/avatar/bdff2cc237e0f423706563be675e6648?s=496&d=retro",
+      "fields": [
+        {
+          "name": "fullname",
+          "value": "",
+          "title": "Full Name",
+          "show": ""
+        },
+        {
+          "name": "email",
+          "value": "zulu@gmail.com",
+          "title": "Email",
+          "show": "<a href=\"mailto:zulu@gmail.com\">zulu@gmail.com</a>"
+        },
+        {
+          "name": "github",
+          "value": "",
+          "title": "Github",
+          "show": ""
+        },
+        {
+          "name": "twitter",
+          "value": "",
+          "title": "Twitter",
+          "show": ""
+        },
+        {
+          "name": "appdotnet",
+          "value": "",
+          "title": "App.net",
+          "show": ""
+        },
+        {
+          "name": "homepage",
+          "value": "",
+          "title": "Homepage",
+          "show": ""
+        },
+        {
+          "name": "freenode",
+          "value": "",
+          "title": "IRC Handle",
+          "show": ""
+        }
+      ],
+      "fullname": "Alex",
+      "github": "",
+      "twitter": "",
+      "appdotnet": "",
+      "homepage": "",
+      "freenode": "",
+      "roles": []
+    }
+  ]
+}
