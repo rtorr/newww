@@ -1,0 +1,38 @@
+{{> header}}
+
+<h1>Login, please</h1>
+
+{{!-- <% if (locals.failed || locals.error ||
+       locals.statusCode && locals.statusCode >= 400) { %>
+  <p class=error>The information you entered was rejected for reasons.</p>
+  <p>You may try again, or <a href=/forgot>reset your password</a>
+  if you have forgotten it.</p>
+  <% if (locals.message) { %>
+  <p>The server said: <code><%= locals.message %></code></p>
+  <% } %>
+<% } %>
+ --}}
+
+{{#if message}}
+  <p class='error'>{{message}}</p>
+{{/if}}
+
+<form action='' method='post' class='form'>
+  <fieldset>
+    <label for='name'>Username</label>
+    <input name='name' id='name'>
+  </fieldset>
+  <fieldset>
+    <label for='password'>Password</label>
+    <input type='password' name='password' id='password'>
+  </fieldset>
+  <fieldset class='buttons'>
+    <button class='btn' type='submit'>Login!</button>
+    <a href="/forgot">Forgot password?</a>
+  </fieldset>
+  {{!-- <%- csrf %> --}}
+</form>
+
+<p>Don't have an account? <a href="/signup">Sign up.</a>
+
+{{> footer}}

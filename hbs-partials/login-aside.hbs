@@ -1,1 +1,21 @@
-login-aside.hbs
+<aside class="login">
+  {{#if profile}}
+    <div class="user profile">
+      {{#if profile.avatarMedium}}
+      <img src="{{profile.avatarMedium}}" class="avatar-medium">
+      {{/if}}
+      <a class="username" href="/profile">{{#if profile.fullname}}{{profile.fullname}}{{else}}{{profile.name}}{{/if}}</a>
+      <p class='profsub'>
+        <a class='profsub' href='/profile-edit'>Edit Profile</a> |
+        <a class='profsub' href='/logout'>Log out</a>
+      </p>
+    </div>
+    <ul class="menu">
+    </ul>
+  {{else}}
+    <div class="user profile">
+      <img src="https://secure.gravatar.com/avatar/avatar.jpg?s=100&d=mm" class="avatar-medium">
+      <a href='/signup'>Create Account</a> | <a href='/login'>Login</a>
+    </div>
+  {{/if}}
+</aside>

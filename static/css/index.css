@@ -316,11 +316,11 @@ form .form-help {
   border-right: 1px solid #999;
 }
 #content aside.login {
-  background: -webkit-linear-gradient(top, hsla(0,0,50,0.1), transparent);
-  background: -moz-linear-gradient(top, hsla(0,0,50,0.1), transparent);
-  background: -o-linear-gradient(top, hsla(0,0,50,0.1), transparent);
-  background: -ms-linear-gradient(top, hsla(0,0,50,0.1), transparent);
-  background: linear-gradient(to bottom, hsla(0,0,50,0.1), transparent);
+  background: -webkit-linear-gradient(top, rgba(128,128,128,0.1) 0%, transparent 100%);
+  background: -moz-linear-gradient(top, rgba(128,128,128,0.1) 0%, transparent 100%);
+  background: -o-linear-gradient(top, rgba(128,128,128,0.1) 0%, transparent 100%);
+  background: -ms-linear-gradient(top, rgba(128,128,128,0.1) 0%, transparent 100%);
+  background: linear-gradient(to bottom, rgba(128,128,128,0.1) 0%, transparent 100%);
   float: right;
   padding: 1em;
   width: 220px;
