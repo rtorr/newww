@@ -54,6 +54,11 @@ exports.user = {
   }
 };
 
+exports.session = {
+  password: 'i dunno, something secure probably?',
+  cookie: 's',
+  expiresIn: 14 * 24 * 60 * 60 * 1000 // 2 wks
+}
 
 exports.otherStuff = {
   "keys": [

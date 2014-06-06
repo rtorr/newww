@@ -30,10 +30,31 @@ server.pack.require({
 }, function(err) {
     if (err) throw err;
 
+    var cache = server.cache('sessions', {
+      expiresIn: config.session.expiresIn
+    });
+
+    server.app.cache = cache;
+
     server.auth.strategy('session', 'cookie', 'try', {
-      password: config.authPass,
-      cookie: 's',
+      password: config.session.password,
+      cookie: config.session.cookie,
       redirectTo: '/login',
+      appendNext: true,
+      validateFunc: function (session, callback) {
+        cache.get(session.sid, function (err, cached) {
+          // use this spot here to verify user is still logged into couch
+
+          if (err) {
+            return callback(err, false);
+          }
+          if (!cached) {
+            return callback(null, false);
+          }
+
+          return callback(null, true, cached.item)
+        })
+      }
     });
 
     server.start(function() {
