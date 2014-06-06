@@ -1,6 +1,6 @@
 {
   "name": "www-hapi",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "dependencies": {
     "catbox": {
       "version": "2.2.1",
@@ -185,6 +185,22 @@
         }
       }
     },
+    "hapi-auth-cookie": {
+      "version": "1.0.3",
+      "from": "hapi-auth-cookie@",
+      "resolved": "https://registry.npmjs.org/hapi-auth-cookie/-/hapi-auth-cookie-1.0.3.tgz",
+      "dependencies": {
+        "boom": {
+          "version": "2.4.1",
+          "from": "boom@2.x.x"
+        },
+        "hoek": {
+          "version": "2.3.0",
+          "from": "hoek@2.x.x",
+          "resolved": "https://registry.npmjs.org/hoek/-/hoek-2.3.0.tgz"
+        }
+      }
+    },
     "joi": {
       "version": "3.1.0",
       "from": "joi@",
@@ -194,6 +210,10 @@
           "from": "hoek@2.x.x"
         }
       }
+    },
+    "murmurhash": {
+      "version": "0.0.2",
+      "from": "murmurhash@"
     },
     "nib": {
       "version": "1.0.2",
