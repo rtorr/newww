@@ -1,10 +1,10 @@
 <aside class="login">
-  {{#if profile}}
+  {{#if user}}
     <div class="user profile">
-      {{#if profile.avatarMedium}}
-      <img src="{{profile.avatarMedium}}" class="avatar-medium">
+      {{#if user.avatarMedium}}
+      <img src="{{user.avatarMedium}}" class="avatar-medium">
       {{/if}}
-      <a class="username" href="/profile">{{#if profile.fullname}}{{profile.fullname}}{{else}}{{profile.name}}{{/if}}</a>
+      <a class="username" href="/profile">{{#if user.fullname}}{{user.fullname}}{{else}}{{user.name}}{{/if}}</a>
       <p class='profsub'>
         <a class='profsub' href='/profile-edit'>Edit Profile</a> |
         <a class='profsub' href='/logout'>Log out</a>

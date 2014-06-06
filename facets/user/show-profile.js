@@ -3,6 +3,11 @@ var transform = require('./presenters/profile').transform;
 
 module.exports = function (options) {
   return function (request, reply) {
+
+    var opts = {
+      user: request.auth.credentials
+    }
+
     var getUserFromCouch = request.server.methods.getUserFromCouch;
     var getBrowseData = request.server.methods.getBrowseData;
 
@@ -10,7 +15,7 @@ module.exports = function (options) {
       getBrowseData('userstar', request.params.name, 0, 1000, function (err, starred) {
         getBrowseData('author', request.params.name, 0, 1000, function (err, packages) {
 
-          var profile = {
+          opts.profile = {
             showprofile: transform(showprofile, options),
             // profile: req.model.profile,
             fields: showprofile.fields,
@@ -20,7 +25,7 @@ module.exports = function (options) {
             starred: getRandomAssortment(starred, 'starred', request.params.name)
           }
 
-          reply.view('profile', profile)
+          reply.view('profile', opts)
         });
       });
     });

@@ -12,7 +12,12 @@ exports.register = function Company (facet, options, next) {
     path: "/",
     method: "GET",
     handler: function(request, reply) {
-      reply.view('index', {});
+
+      var opts = {
+        user: request.auth.credentials
+      }
+
+      reply.view('index', opts);
     }
   });
 

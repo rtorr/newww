@@ -10,11 +10,18 @@ module.exports = function (request, reply) {
   var nameInfo = parseName(request.params.package)
   var version = nameInfo.version || 'latest'
 
+  var opts = {
+    user: request.auth.credentials
+  }
+
+
   if (nameInfo.name !== encodeURIComponent(nameInfo.name)) {
     var error = Hapi.error.badRequest('Invalid Package Name');
     error.message = "The package you have requested is an invalid package name.\n\nTry again?"
 
-    return reply.view('error', error)
+    opts.error = error;
+
+    return reply.view('error', opts)
   }
 
   getPackageFromCouch(couchLookupName(nameInfo), function (er, pkg) {
@@ -22,7 +29,8 @@ module.exports = function (request, reply) {
       var error = Hapi.error.notFound('Package Not Found');
       error.message = "This package does not exist in the registry. Would you like to claim it for yourself?"
 
-      return reply.view('error', error)
+      opts.error = error;
+      return reply.view('error', opts)
     }
 
     if (pkg.time && pkg.time.unpublished) {
@@ -37,10 +45,10 @@ module.exports = function (request, reply) {
 
       presentPackage(pkg, function (er, pkg) {
 
-        reply.view('package-page', {
-          package: pkg,
-          title: pkg.name
-        });
+        opts.package = pkg;
+        opts.title = pkg.name;
+
+        reply.view('package-page', opts);
       })
     })
   })

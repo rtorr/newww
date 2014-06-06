@@ -1,4 +1,5 @@
 {{> header}}
+{{#with error}}
 <h1>{{output.payload.message}}</h1>
 
 <p>{{message}}</p>
@@ -25,5 +26,5 @@ statusCode = {{error.output.statusCode}}
 
 stamp = {{stamp}}
 </pre> --}}
-
+{{/with}}
 {{> footer}}

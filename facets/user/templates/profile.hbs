@@ -1,5 +1,6 @@
-{{> header locals}}
+{{> header}}
 
+{{#with profile}}
 <div id="profile">
   {{#if showprofile.isSelf}}
   <a href="http://en.gravatar.com/emails/"
@@ -55,6 +56,7 @@
     <a href='/logout/?done=/profile/{{showprofile.name}}'>log out</a>
   {{/if}}
 </div>
+{{/with}}
 
 {{> footer locals}}
 <script src="/static/js/emObf.js" async="true"></script>
